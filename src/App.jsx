@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import { useDeviceDetection } from './hooks/useDeviceDetection'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </main>
     </div>
