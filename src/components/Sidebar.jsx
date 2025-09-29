@@ -1,8 +1,9 @@
 import React from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const Sidebar = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   
   const navItems = [
     {
@@ -22,6 +23,7 @@ const Sidebar = () => {
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40">
       <div className="p-6 relative z-10">
+        {/* Logo/Título más divertido */}
         <div className="mb-8 text-center">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border-2 border-white border-opacity-30 shadow-lg">
             <div className="text-4xl mb-2">👤</div>
@@ -30,12 +32,14 @@ const Sidebar = () => {
           </div>
         </div>
         
+        {/* Navegación más divertida */}
         <nav className="space-y-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
             return (
               <button
                 key={item.path}
+                onClick={() => navigate(item.path)}
                 className={`w-full group relative overflow-hidden rounded-2xl transition-all duration-300 transform hover:scale-105 ${
                   isActive
                     ? 'bg-white bg-opacity-30 shadow-lg scale-105'
@@ -55,6 +59,8 @@ const Sidebar = () => {
             )
           })}
         </nav>
+        
+
       </div>
     </div>
   )
