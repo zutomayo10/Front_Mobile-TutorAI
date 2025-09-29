@@ -1,12 +1,24 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
+  const navigate = useNavigate()
   const [userLevel] = useState(15)
   const [userExp] = useState({ current: 240, total: 400 })
+
+  const handlePlayChallenge = (challenge) => {
+    if (challenge.isUnlocked) {
+      navigate('/exercises', { 
+        state: { 
+          challengeTitle: challenge.title 
+        } 
+      })
+    }
+  }
 
   const challenges = [
     {
@@ -201,7 +213,13 @@ const Dashboard = () => {
                   </div>
 
                   {/* Botón de acción */}
-                  <button className={`w-full bg-gradient-to-r ${challenge.color} hover:scale-105 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2`}>
+                  <button 
+                    onClick={() => handlePlayChallenge(challenge)}
+                    className={`w-full bg-gradient-to-r ${challenge.color} hover:scale-105 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 ${
+                      challenge.isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'
+                    }`}
+                    disabled={!challenge.isUnlocked}
+                  >
                     {challenge.isUnlocked ? (
                       <span>¡JUGAR AHORA!</span>
                     ) : (
