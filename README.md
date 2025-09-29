@@ -1,1 +1,0 @@
-# Front_Mobile-TutorAI
