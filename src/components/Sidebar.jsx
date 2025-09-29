@@ -1,9 +1,12 @@
 import React from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useUserProfile } from '../hooks/useUserProfile'
+import Avatar from './Avatar'
 
 const Sidebar = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { profileImage, uploadedImageUrl, userName, isLoading } = useUserProfile()
   
   const navItems = [
     {
@@ -23,16 +26,22 @@ const Sidebar = () => {
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40">
       <div className="p-6 relative z-10">
-        {/* Logo/Título más divertido */}
         <div className="mb-8 text-center">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border-2 border-white border-opacity-30 shadow-lg">
-            <div className="text-4xl mb-2">👤</div>
-            <h1 className="text-white text-xl font-bold drop-shadow-lg">Juan Chavez</h1>
+            <div className="mb-3 flex justify-center">
+              <Avatar
+                profileImage={profileImage}
+                uploadedImageUrl={uploadedImageUrl}
+                isLoading={isLoading}
+                size="md"
+                className="border-2 border-white shadow-lg"
+              />
+            </div>
+            <h1 className="text-white text-xl font-bold drop-shadow-lg">{userName}</h1>
             <p className="text-yellow-200 text-sm font-semibold">Estudiante</p>
           </div>
         </div>
         
-        {/* Navegación más divertida */}
         <nav className="space-y-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path

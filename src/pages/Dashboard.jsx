@@ -1,11 +1,14 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
+import { useUserProfile } from '../hooks/useUserProfile'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
+import Avatar from '../components/Avatar'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
+  const { profileImage, uploadedImageUrl, userName, isLoading } = useUserProfile()
   const navigate = useNavigate()
   const [userLevel] = useState(15)
   const [userExp] = useState({ current: 240, total: 400 })
@@ -84,52 +87,58 @@ const Dashboard = () => {
         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
       </div>
 
-      {/* Layout responsive */}
       <div className="relative z-10 flex">
-        {/* Sidebar para desktop */}
         {!isMobile && <Sidebar />}
         
-        {/* Contenido principal */}
         <div className={`flex-1 ${isMobile ? 'pb-20' : 'pl-64'}`}>
           <div className="p-4 md:p-6">
-            {/* Header con información del usuario - Más divertido */}
             <div className="mb-6">
-              {/* Avatar y nivel */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-4 border-white border-opacity-50 shadow-lg">
-                      <span className="text-white text-3xl filter drop-shadow-lg">👤</span>
-                    </div>
+                    <Avatar
+                      profileImage={profileImage}
+                      uploadedImageUrl={uploadedImageUrl}
+                      isLoading={isLoading}
+                      size="md"
+                      className="border-white border-opacity-50 shadow-lg"
+                    />
                   </div>
                   <div>
-                    <h2 className="text-white font-bold text-xl drop-shadow-lg">Juan Chavez</h2>
+                    <h2 className="text-white font-bold text-xl drop-shadow-lg">{userName}</h2>
                     <p className="text-yellow-200 text-sm font-semibold drop-shadow">Nivel {userLevel}</p>
                   </div>
                 </div>
               </div>
               
-              {/* Barra de experiencia más divertida */}
-              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-full p-2 shadow-lg">
-                <div className="flex items-center justify-between mb-2 px-2">
-                  <span className="text-white text-sm font-bold flex items-center">
-                    <span className="mr-1">⚡</span> 
-                    Experiencia
-                  </span>
-                  <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} EXP</span>
+              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-yellow-300 text-xl">⚡</span>
+                    <span className="text-white font-semibold">Experiencia</span>
+                  </div>
+                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full px-4 py-1 border border-white/30">
+                    <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} EXP</span>
+                  </div>
                 </div>
-                <div className="w-full bg-black bg-opacity-30 rounded-full h-4 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 h-4 rounded-full transition-all duration-1000 shadow-inner relative"
-                    style={{ width: `${(userExp.current / userExp.total) * 100}%` }}
-                  >
-                    <div className="absolute inset-0 bg-white bg-opacity-30 rounded-full animate-pulse"></div>
+                <div className="relative">
+                  <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/20">
+                    <div 
+                      className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 h-full rounded-full transition-all duration-1000 relative"
+                      style={{ width: `${(userExp.current / userExp.total) * 100}%` }}
+                    >
+                      <div className="absolute inset-0 bg-white/30 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold drop-shadow-lg">
+                      {Math.round((userExp.current / userExp.total) * 100)}%
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Título principal más divertido */}
             <div className="mb-8">
               <div className="text-center">
                 <div className="inline-flex items-center bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-white border-opacity-30 mb-4">
@@ -145,14 +154,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Lista de desafíos más divertida */}
             <div className="space-y-6">
               {challenges.map((challenge, index) => (
                 <div 
                   key={index}
                   className={`relative bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-6 border-2 border-white border-opacity-20 hover:bg-opacity-20 hover:scale-105 transform transition-all duration-300 cursor-pointer shadow-xl ${challenge.shadowColor} ${!challenge.isUnlocked ? 'opacity-60' : ''}`}
                 >
-                  {/* Efecto de brillo */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-10 rounded-2xl transition-opacity duration-300"></div>
                   
                   <div className="flex items-center justify-between mb-4">
@@ -164,7 +171,6 @@ const Dashboard = () => {
                         <h3 className="text-white font-bold text-xl drop-shadow-lg mb-1">
                           {challenge.title}
                         </h3>
-                        {/* Estrellas de progreso */}
                         <div className="flex items-center space-x-1">
                           {[...Array(5)].map((_, i) => (
                             <span 
@@ -178,7 +184,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                     
-                    {/* Badge de estado */}
                     {challenge.isUnlocked ? (
                       <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         ¡DISPONIBLE!
@@ -201,7 +206,6 @@ const Dashboard = () => {
                       </p>
                     </div>
                     
-                    {/* Barra de progreso del desafío más divertida */}
                     <div className="w-full bg-black bg-opacity-30 rounded-full h-3 overflow-hidden shadow-inner">
                       <div
                         className={`bg-gradient-to-r ${challenge.color} h-3 rounded-full transition-all duration-1000 shadow-lg relative`}
@@ -212,7 +216,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Botón de acción */}
                   <button 
                     onClick={() => handlePlayChallenge(challenge)}
                     className={`w-full bg-gradient-to-r ${challenge.color} hover:scale-105 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 ${
