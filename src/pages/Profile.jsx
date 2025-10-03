@@ -127,7 +127,7 @@ const Profile = () => {
           <div className="p-4 md:p-6">
             
             <div className="mb-6">
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#2ECC71'}}>
                 <div className="text-center">
                   <div className="relative inline-block mb-4">
                     <Avatar
@@ -162,16 +162,16 @@ const Profile = () => {
                     <div className="absolute -top-3 right-4 text-yellow-300 text-xl">⭐</div>
                     <div className="absolute bottom-2 -left-3 text-yellow-300 text-lg">💫</div>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 inline-block border-2 border-white/30 shadow-xl">
-                    <h1 className="text-white text-3xl font-bold drop-shadow-2xl mb-1">🌟 {userName} 🌟</h1>
-                    <p className="text-yellow-200 text-lg font-semibold drop-shadow">¡Mago Matemático en Entrenamiento!</p>
+                  <div className="rounded-2xl px-6 py-3 inline-block border-2 border-white/30 shadow-xl" style={{backgroundColor: '#CBF3DC'}}>
+                    <h1 className="text-gray-800 text-3xl font-bold drop-shadow-2xl mb-1">🌟 {userName} 🌟</h1>
+                    <p className="text-green-700 text-lg font-semibold drop-shadow">¡Mago Matemático en Entrenamiento!</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <span className="text-yellow-300 text-xl">⚡</span>
@@ -199,29 +199,24 @@ const Profile = () => {
             </div>
 
             <div className="mb-6">
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/30">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">📚</div>
-                    <div className="text-white text-xs font-bold">Lecciones</div>
-                    <div className="text-yellow-300 text-xl font-bold drop-shadow">8</div>
+                    <div className="text-gray-700 text-xs font-bold">Lecciones Completadas</div>
+                    <div className="text-green-700 text-xl font-bold drop-shadow">8</div>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/30">
-                    <div className="text-3xl mb-2">⭐</div>
-                    <div className="text-white text-xs font-bold">Estrellas</div>
-                    <div className="text-yellow-300 text-xl font-bold drop-shadow">24</div>
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/30">
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">🎯</div>
-                    <div className="text-white text-xs font-bold">Precisión</div>
-                    <div className="text-yellow-300 text-xl font-bold drop-shadow">87%</div>
+                    <div className="text-gray-700 text-xs font-bold">Precisión</div>
+                    <div className="text-green-700 text-xl font-bold drop-shadow">87%</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
                 <h2 className="text-white text-2xl font-bold mb-4 text-center drop-shadow-lg">
                   <span className="inline-block">🏆</span>
                   <span className="mx-3">Tus Increíbles Logros</span>
@@ -257,7 +252,7 @@ const Profile = () => {
                   ))}
                 </div>
                 <div className="text-center">
-                  <button className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-all duration-300 border-2 border-white/50">
+                  <button className="text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-all duration-300 border-2 border-white/50 hover:opacity-90" style={{backgroundColor: '#F19506'}}>
                     <span className="flex items-center space-x-2">
                       <span className="text-lg">🎯</span>
                       <span>¡Ver Todos los Logros!</span>
@@ -269,32 +264,32 @@ const Profile = () => {
             </div>
 
             <div className="mb-6">
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
                 <h3 className="text-white text-xl font-bold mb-4 text-center flex items-center justify-center">
                   <span className="mr-2 text-2xl">📊</span>
                   <span>Tu Progreso Fantástico</span>
                   <span className="ml-2 text-2xl">🚀</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/30">
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">🎯</div>
-                    <div className="text-white font-bold text-lg">Desafíos</div>
-                    <div className="text-yellow-300 text-2xl font-bold">{completedChallenges}/{totalChallenges}</div>
-                    <div className="w-full bg-black/30 rounded-full h-2 mt-2">
+                    <div className="text-gray-700 font-bold text-lg">Desafíos</div>
+                    <div className="text-green-700 text-2xl font-bold">{completedChallenges}/{totalChallenges}</div>
+                    <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
                       <div 
-                        className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full"
-                        style={{ width: `${(completedChallenges / totalChallenges) * 100}%` }}
+                        className="h-2 rounded-full"
+                        style={{ width: `${(completedChallenges / totalChallenges) * 100}%`, backgroundColor: '#3FD47E' }}
                       ></div>
                     </div>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/30">
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">🏅</div>
-                    <div className="text-white font-bold text-lg">Logros</div>
-                    <div className="text-yellow-300 text-2xl font-bold">{achievements}/{totalAchievements}</div>
-                    <div className="w-full bg-black/30 rounded-full h-2 mt-2">
+                    <div className="text-gray-700 font-bold text-lg">Logros</div>
+                    <div className="text-green-700 text-2xl font-bold">{achievements}/{totalAchievements}</div>
+                    <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
                       <div 
-                        className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full"
-                        style={{ width: `${(achievements / totalAchievements) * 100}%` }}
+                        className="h-2 rounded-full"
+                        style={{ width: `${(achievements / totalAchievements) * 100}%`, backgroundColor: '#3FD47E' }}
                       ></div>
                     </div>
                   </div>
