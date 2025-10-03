@@ -25,7 +25,7 @@ export default {
         }
       },
       fontFamily: {
-        'sans': ['Inter', 'ui-sans-serif', 'system-ui'],
+        'sans': ['Nunito', 'ui-sans-serif', 'system-ui'],
       },
       spacing: {
         '18': '4.5rem',

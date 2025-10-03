@@ -155,7 +155,7 @@ const Dashboard = () => {
                   
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${challenge.color} rounded-xl flex items-center justify-center text-3xl shadow-lg transform hover:rotate-12 transition-transform duration-300`}>
+                      <div className="w-16 h-16 bg-green-600 rounded-xl flex items-center justify-center text-3xl shadow-lg transform hover:rotate-12 transition-transform duration-300">
                         {challenge.icon}
                       </div>
                       <div>
@@ -179,7 +179,7 @@ const Dashboard = () => {
                     
                     <div className="w-full bg-black bg-opacity-30 rounded-full h-3 overflow-hidden shadow-inner">
                       <div
-                        className={`bg-gradient-to-r ${challenge.color} h-3 rounded-full transition-all duration-1000 shadow-lg relative`}
+                        className="bg-green-500 h-3 rounded-full transition-all duration-1000 shadow-lg relative"
                         style={{ width: `${challenge.progress}%` }}
                       >
                         <div className="absolute inset-0 bg-white bg-opacity-30 rounded-full animate-pulse"></div>
@@ -189,7 +189,8 @@ const Dashboard = () => {
 
                   <button 
                     onClick={() => handlePlayChallenge(challenge)}
-                    className={`w-full bg-gradient-to-r ${challenge.color} transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer`}
+                    className="w-full hover:opacity-90 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer"
+                    style={{ backgroundColor: '#F19506' }}
                   >
                     <span>¡JUGAR AHORA!</span>
                   </button>
