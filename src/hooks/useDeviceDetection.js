@@ -1,13 +1,24 @@
 import { useState, useEffect } from 'react'
 
+const getInitialDeviceInfo = () => {
+  const width = typeof window !== 'undefined' ? window.innerWidth : 1024
+  const height = typeof window !== 'undefined' ? window.innerHeight : 768
+  
+  const isMobile = width < 768
+  const isTablet = width >= 768 && width < 1024
+  const isDesktop = width >= 1024
+  
+  return {
+    isMobile,
+    isTablet,
+    isDesktop,
+    screenWidth: width,
+    screenHeight: height
+  }
+}
+
 export const useDeviceDetection = () => {
-  const [deviceInfo, setDeviceInfo] = useState({
-    isMobile: false,
-    isTablet: false,
-    isDesktop: false,
-    screenWidth: window.innerWidth,
-    screenHeight: window.innerHeight
-  })
+  const [deviceInfo, setDeviceInfo] = useState(getInitialDeviceInfo)
 
   useEffect(() => {
     const updateDeviceInfo = () => {

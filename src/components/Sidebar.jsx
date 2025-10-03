@@ -24,7 +24,7 @@ const Sidebar = () => {
   ]
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40">
+    <div className="sidebar-desktop fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40">
       <div className="p-6 relative z-10">
         <div className="mb-8 text-center">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border-2 border-white border-opacity-30 shadow-lg">
@@ -68,8 +68,6 @@ const Sidebar = () => {
             )
           })}
         </nav>
-        
-
       </div>
     </div>
   )

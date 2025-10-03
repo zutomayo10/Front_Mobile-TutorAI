@@ -20,6 +20,126 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
   overflow-x: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  background-color: #2d5016;
+}
+
+@supports (-webkit-overflow-scrolling: touch) {
+  body {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .fixed-background {
+    position: absolute !important;
+    background-attachment: scroll !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  
+  .background-layer {
+    position: absolute !important;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  
+  .min-h-screen {
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  .dashboard-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+  }
+  
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+}
+
+@media (min-width: 769px) {
+  .fixed-background {
+    background-attachment: fixed !important;
+  }
+}
+
+.sidebar-desktop {
+  display: block;
+}
+
+.main-content-mobile {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav-fixed {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .sidebar-desktop {
+    display: none !important;
+  }
+  
+  .main-content-mobile {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .bottom-nav-fixed {
+    display: none !important;
+  }
 }
 
 .safe-area-padding-top {

@@ -24,14 +24,12 @@ function App() {
 
   return (
     <div className={`app ${isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'}`}>
-      {/* Indicador de conexión offline */}
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 text-sm z-50">
           Sin conexión a Internet
         </div>
       )}
       
-      {/* Contenido principal */}
       <main>
         <Routes>
           <Route path="/" element={<Login />} />

@@ -14,13 +14,11 @@ const Dashboard = () => {
   const [userExp] = useState({ current: 240, total: 400 })
 
   const handlePlayChallenge = (challenge) => {
-    if (challenge.isUnlocked) {
-      navigate('/exercises', { 
-        state: { 
-          challengeTitle: challenge.title 
-        } 
-      })
-    }
+    navigate('/exercises', { 
+      state: { 
+        challengeTitle: challenge.title 
+      } 
+    })
   }
 
   const challenges = [
@@ -31,9 +29,7 @@ const Dashboard = () => {
       progress: 75,
       icon: '🧮',
       color: 'from-purple-500 to-pink-500',
-      shadowColor: 'shadow-purple-500/30',
-      stars: 3,
-      isUnlocked: true
+      shadowColor: 'shadow-purple-500/30'
     },
     {
       title: 'Fracciones',
@@ -42,9 +38,7 @@ const Dashboard = () => {
       progress: 75,
       icon: '🍕',
       color: 'from-orange-500 to-red-500',
-      shadowColor: 'shadow-orange-500/30',
-      stars: 3,
-      isUnlocked: true
+      shadowColor: 'shadow-orange-500/30'
     },
     {
       title: 'Geometría Básica',
@@ -53,44 +47,41 @@ const Dashboard = () => {
       progress: 40,
       icon: '📐',
       color: 'from-blue-500 to-cyan-500',
-      shadowColor: 'shadow-blue-500/30',
-      stars: 2,
-      isUnlocked: true
-    },
-    {
-      title: 'Álgebra Simple',
-      completed: 1,
-      total: 6,
-      progress: 16,
-      icon: '�',
-      color: 'from-green-500 to-emerald-500',
-      shadowColor: 'shadow-green-500/30',
-      stars: 1,
-      isUnlocked: false
+      shadowColor: 'shadow-blue-500/30'
     }
   ]
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative dashboard-container" style={{ minHeight: '100dvh' }}>
       <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 fixed-background"
         style={{
           backgroundColor: '#2d5016',
-          backgroundImage: `
-            url("/images/bosque.jpeg"),
-            linear-gradient(135deg, #2d5016 0%, #4a7c23 30%, #3d6b1a 60%, #2d5016 100%),
-            radial-gradient(ellipse at top, rgba(106, 170, 100, 0.3) 0%, transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(45, 80, 22, 0.4) 0%, transparent 50%)
+          backgroundImage: `url("/images/bosque.jpeg")`,
+          backgroundAttachment: 'fixed',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      
+      <div 
+        className="fixed inset-0 background-layer"
+        style={{
+          background: `
+            linear-gradient(135deg, rgba(45, 80, 22, 0.3) 0%, rgba(74, 124, 35, 0.2) 30%, rgba(61, 107, 26, 0.3) 60%, rgba(45, 80, 22, 0.4) 100%),
+            radial-gradient(ellipse at top, rgba(106, 170, 100, 0.2) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom, rgba(45, 80, 22, 0.3) 0%, transparent 50%)
           `
         }}
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-      </div>
+      />
+      
+      <div className="fixed inset-0 bg-black bg-opacity-20 background-layer" />
 
       <div className="relative z-10 flex">
         {!isMobile && <Sidebar />}
         
-        <div className={`flex-1 ${isMobile ? 'pb-20' : 'pl-64'}`}>
+        <div className={`flex-1 ${isMobile ? 'pb-20 main-content-mobile' : 'pl-64'}`}>
           <div className="p-4 md:p-6">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -111,13 +102,13 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-white/20">
+              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <span className="text-yellow-300 text-xl">⚡</span>
                     <span className="text-white font-semibold">Experiencia</span>
                   </div>
-                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full px-4 py-1 border border-white/30">
+                  <div className="rounded-full px-4 py-1 border border-white/30" style={{backgroundColor: '#F19506'}}>
                     <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} EXP</span>
                   </div>
                 </div>
@@ -141,7 +132,7 @@ const Dashboard = () => {
 
             <div className="mb-8">
               <div className="text-center">
-                <div className="inline-flex items-center bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-white border-opacity-30 mb-4">
+                <div className="inline-flex items-center rounded-full px-6 py-3 shadow-lg border border-white border-opacity-30 mb-4" style={{backgroundColor: '#239B56'}}>
                   <span className="text-3xl mr-3 animate-pulse">⚔️</span>
                   <h1 className="text-white text-2xl md:text-3xl font-bold drop-shadow-lg">
                     ¡Tus Aventuras Matemáticas!
@@ -158,7 +149,7 @@ const Dashboard = () => {
               {challenges.map((challenge, index) => (
                 <div 
                   key={index}
-                  className={`relative bg-white bg-opacity-10 backdrop-blur-md rounded-2xl p-6 border-2 border-white border-opacity-20 hover:bg-opacity-20 hover:scale-105 transform transition-all duration-300 cursor-pointer shadow-xl ${challenge.shadowColor} ${!challenge.isUnlocked ? 'opacity-60' : ''}`}
+                  className={`relative bg-green-800 bg-opacity-90 backdrop-blur-md rounded-2xl p-6 border-2 border-white border-opacity-20 transform transition-all duration-300 cursor-pointer shadow-xl ${challenge.shadowColor}`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-10 rounded-2xl transition-opacity duration-300"></div>
                   
@@ -171,28 +162,8 @@ const Dashboard = () => {
                         <h3 className="text-white font-bold text-xl drop-shadow-lg mb-1">
                           {challenge.title}
                         </h3>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <span 
-                              key={i} 
-                              className={`text-lg ${i < challenge.stars ? 'text-yellow-400' : 'text-gray-400'} drop-shadow`}
-                            >
-                              ⭐
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     </div>
-                    
-                    {challenge.isUnlocked ? (
-                      <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                        ¡DISPONIBLE!
-                      </div>
-                    ) : (
-                      <div className="bg-gray-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center">
-                        🔒 BLOQUEADO
-                      </div>
-                    )}
                   </div>
                   
                   <div className="mb-4">
@@ -218,16 +189,9 @@ const Dashboard = () => {
 
                   <button 
                     onClick={() => handlePlayChallenge(challenge)}
-                    className={`w-full bg-gradient-to-r ${challenge.color} hover:scale-105 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 ${
-                      challenge.isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'
-                    }`}
-                    disabled={!challenge.isUnlocked}
+                    className={`w-full bg-gradient-to-r ${challenge.color} transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer`}
                   >
-                    {challenge.isUnlocked ? (
-                      <span>¡JUGAR AHORA!</span>
-                    ) : (
-                      <span>Completa desafíos anteriores</span>
-                    )}
+                    <span>¡JUGAR AHORA!</span>
                   </button>
                 </div>
               ))}
