@@ -229,7 +229,7 @@ const Profile = () => {
                       className="relative cursor-pointer group"
                     >
                       <div
-                        className={`w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-2xl relative transform transition-all duration-300 group-hover:scale-110 ${
+                        className={`w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-2xl relative transform transition-all duration-300 ${
                           logro.achieved
                             ? `bg-gradient-to-br ${logro.color} border-white`
                             : 'bg-gray-600 border-gray-500 opacity-60'
@@ -245,14 +245,11 @@ const Profile = () => {
                           </div>
                         )}
                       </div>
-                      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 backdrop-blur-sm text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap border border-white/20">
-                        {logro.name}
-                      </div>
                     </div>
                   ))}
                 </div>
                 <div className="text-center">
-                  <button className="text-white font-bold py-3 px-8 rounded-full shadow-xl transform hover:scale-110 transition-all duration-300 border-2 border-white/50 hover:opacity-90" style={{backgroundColor: '#F19506'}}>
+                  <button className="text-white font-bold py-3 px-8 rounded-full shadow-xl transition-all duration-300 border-2 border-white/50 hover:opacity-90" style={{backgroundColor: '#F19506'}}>
                     <span className="flex items-center space-x-2">
                       <span className="text-lg">🎯</span>
                       <span>¡Ver Todos los Logros!</span>

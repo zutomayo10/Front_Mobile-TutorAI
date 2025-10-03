@@ -59,6 +59,16 @@ const Exercises = () => {
   const handleExerciseClick = (exercise) => {
     if (exercise.isUnlocked) {
       console.log(`Iniciando ejercicio: ${exercise.title}`)
+      
+      // Si es el ejercicio de Multiplicación, navegar a la página de pregunta (solo para pruebas)
+      if (exercise.id === 3 && exercise.title === 'Multiplicación') {
+        navigate('/question', { 
+          state: { 
+            exerciseTitle: exercise.title,
+            exerciseId: exercise.id 
+          } 
+        })
+      }
     }
   }
 
