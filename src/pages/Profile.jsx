@@ -175,7 +175,7 @@ const Profile = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <span className="text-yellow-300 text-xl">⚡</span>
-                    <span className="text-white font-semibold">Energía Mágica</span>
+                    <span className="text-white font-semibold">Experiencia</span>
                   </div>
                   <div className="rounded-full px-4 py-1 border border-white/30" style={{backgroundColor: '#F19506'}}>
                     <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} XP</span>
