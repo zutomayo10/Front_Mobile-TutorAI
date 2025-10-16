@@ -137,7 +137,6 @@ const Exercises = () => {
               </filter>
             </defs>
             
-            
 
             {isMobile ? (
               <>
