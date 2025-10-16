@@ -5,6 +5,7 @@ import { useUserProfile } from '../hooks/useUserProfile'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 import Avatar from '../components/Avatar'
+import ExperienceBar from '../components/ExperienceBar'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
@@ -84,14 +85,14 @@ const Dashboard = () => {
         <div className={`flex-1 ${isMobile ? 'pb-20 main-content-mobile' : 'pl-64'}`}>
           <div className="p-4 md:p-6">
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className={`${isMobile ? 'flex flex-col' : 'flex items-start'} mb-4`}>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <Avatar
                       profileImage={profileImage}
                       uploadedImageUrl={uploadedImageUrl}
                       isLoading={isLoading}
-                      size="md"
+                      size={isMobile ? "sm" : "md"}
                       className="border-white border-opacity-50 shadow-lg"
                     />
                   </div>
@@ -100,33 +101,11 @@ const Dashboard = () => {
                     <p className="text-yellow-200 text-sm font-semibold drop-shadow">Nivel {userLevel}</p>
                   </div>
                 </div>
-              </div>
-              
-              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-yellow-300 text-xl">⚡</span>
-                    <span className="text-white font-semibold">Experiencia</span>
-                  </div>
-                  <div className="rounded-full px-4 py-1 border border-white/30" style={{backgroundColor: '#F19506'}}>
-                    <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} EXP</span>
-                  </div>
-                </div>
-                <div className="relative">
-                  <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/20">
-                    <div 
-                      className="bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 h-full rounded-full transition-all duration-1000 relative"
-                      style={{ width: `${(userExp.current / userExp.total) * 100}%` }}
-                    >
-                      <div className="absolute inset-0 bg-white/30 rounded-full"></div>
-                    </div>
-                  </div>
-                  <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold drop-shadow-lg">
-                      {Math.round((userExp.current / userExp.total) * 100)}%
-                    </span>
-                  </div>
-                </div>
+                <ExperienceBar 
+                  currentExp={userExp.current}
+                  totalExp={userExp.total}
+                  isMobile={isMobile}
+                />
               </div>
             </div>
 
@@ -200,8 +179,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-
       {isMobile && <BottomNavigation />}
     </div>
   )
