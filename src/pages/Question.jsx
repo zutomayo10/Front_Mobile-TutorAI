@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
+import ChestButton from '../components/ChestButton'
 
 const Question = () => {
   const { isMobile } = useDeviceDetection()
@@ -193,18 +194,6 @@ const Question = () => {
       : "/images/cofre_vacio.png"
   }
 
-  const getChestStyle = (option) => {
-    if (!selectedAnswer) return {}
-    
-    if (selectedAnswer.id === option.id) {
-      return isCorrectAnswer(option.value) 
-        ? { transform: 'scale(1.1)' }
-        : { transform: 'scale(1.1)' }
-    }
-    
-    return { opacity: 0.6 }
-  }
-
   if (quizCompleted) {
     const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length
     const scoreOver20 = Math.ceil((correctAnswers / totalQuestions) * 20)
@@ -332,7 +321,6 @@ const Question = () => {
     )
   }
 
-  //Pantalla de intro hacia un nivel (el quiz)
   if (showIntro) {
     return (
       <div className="min-h-screen relative flex items-center justify-center" style={{ minHeight: '100dvh' }}>
@@ -398,11 +386,11 @@ const Question = () => {
       
       <div className="fixed inset-0 bg-black bg-opacity-50" />
 
-      <div className="relative z-10 w-full">
-        <div className="p-4 md:p-6 min-h-screen flex flex-col">
+      <div className="relative z-10 w-full flex justify-center">
+        <div className="p-4 md:p-6 min-h-screen flex flex-col w-full max-w-5xl">
           
-          <div className="mb-6">
-            <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
+          <div className="mb-6 flex justify-center">
+            <div className="rounded-2xl p-4 shadow-xl border border-white/20 w-full max-w-4xl" style={{backgroundColor: '#239B56'}}>
               <h1 className="text-white text-2xl md:text-3xl font-bold text-center mb-4">
                 {currentQuestion.title}
               </h1>
@@ -428,8 +416,8 @@ const Question = () => {
 
           <div className="flex-1 flex flex-col">
             
-            <div className="mb-6">
-              <div className="rounded-2xl p-6 shadow-xl border border-white/20" style={{backgroundColor: 'rgba(35, 155, 86, 0.9)'}}>
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-2xl p-6 shadow-xl border border-white/20 w-full max-w-3xl" style={{backgroundColor: 'rgba(35, 155, 86, 0.9)'}}>
                 <p className="text-white text-lg leading-relaxed text-center">
                   {currentQuestion.problem} <span className="font-bold">{currentQuestion.question}</span>
                 </p>
@@ -437,52 +425,19 @@ const Question = () => {
             </div>
 
             <div className="flex-1 flex items-center justify-center">
-              <div className={`${isMobile ? 'grid grid-cols-2 gap-6 max-w-lg' : 'flex justify-center space-x-8'} w-full`}>
+              <div className={`${isMobile ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex justify-center space-x-8'} w-full`}>
                 {currentQuestion.options.map((option) => (
-                  <div
+                  <ChestButton
                     key={option.id}
-                    onClick={() => !selectedAnswer && handleAnswerSelect(option.id, option.value)}
-                    className={`relative cursor-pointer transform transition-all duration-300 ${
-                      !selectedAnswer ? 'hover:scale-110' : ''
-                    }`}
-                    style={getChestStyle(option)}
-                  >
-                    <div className="relative flex items-center justify-center">
-                      <img 
-                        src={getChestImage(option)}
-                        alt="Cofre"
-                        className={`object-contain drop-shadow-2xl transition-all duration-500 ${
-                          isMobile ? 'w-48 h-48' : 'w-64 h-64'
-                        }`}
-                      />
-                      
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                        <span className={`font-bold text-white drop-shadow-2xl transition-all duration-300 ${
-                          isMobile ? 'text-5xl' : 'text-7xl'
-                        }`} style={{textShadow: '2px 2px 4px rgba(0,0,0,0.8)'}}>
-                          {option.value}
-                        </span>
-                      </div>
-                      
-                      {selectedAnswer?.id === option.id && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          {isCorrectAnswer(option.value) ? (
-                            <div className="absolute inset-0 animate-pulse">
-                              <div className="absolute inset-0 bg-green-400 opacity-20 rounded-full"></div>
-                              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-4xl animate-bounce">✨</div>
-                              <div className="absolute top-1/4 right-0 text-3xl animate-pulse delay-100">🎉</div>
-                              <div className="absolute top-1/4 left-0 text-3xl animate-pulse delay-200">⭐</div>
-                            </div>
-                          ) : (
-                            <div className="absolute inset-0 animate-pulse">
-                              <div className="absolute inset-0 bg-red-400 opacity-20 rounded-full"></div>
-                              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-4xl animate-bounce">😞</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    option={option}
+                    selectedAnswer={selectedAnswer}
+                    onSelect={handleAnswerSelect}
+                    getChestImage={getChestImage}
+                    isCorrectAnswer={isCorrectAnswer}
+                    isMobile={isMobile}
+                    chestSize={{ mobile: 240, desktop: 240 }}
+                    fontSize={{ mobile: 40, desktop: 60 }}
+                  />
                 ))}
               </div>
             </div>
@@ -493,7 +448,7 @@ const Question = () => {
       
       {showResult && (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-          <div className={`rounded-2xl p-8 shadow-2xl border border-white/20 text-center max-w-md w-full transform transition-all duration-500 scale-100 ${
+          <div className={`rounded-2xl p-8 shadow-2xl border border-white/20 text-center max-w-xl w-full transform transition-all duration-500 scale-100 ${
             isCorrectAnswer(selectedAnswer.value) 
               ? 'bg-green-600' 
               : 'bg-red-600'
