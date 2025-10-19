@@ -18,6 +18,11 @@ const Question = () => {
   const exerciseTitle = location.state?.exerciseTitle || 'Multiplicación'
   const exerciseId = location.state?.exerciseId || 3
 
+  // Estados para el sistema de pistas
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0)
+  const [showHintButton, setShowHintButton] = useState(false)
+  const [showHintModal, setShowHintModal] = useState(false)
+
   const questions = [
     {
       id: 1,
@@ -26,6 +31,7 @@ const Question = () => {
       question: "¿Cuántas monedas tiene Joaquín al final?",
       correctAnswer: 4,
       explanation: "5 + 2 - 3 = 4 monedas",
+      hint: "💡 Pista: Primero suma las monedas que recibe (5 + 2), luego resta las que se le caen. ¿Cuántas le quedan?",
       options: [
         { id: 1, value: 5 },
         { id: 2, value: 4 },
@@ -40,6 +46,7 @@ const Question = () => {
       question: "¿Cuántos chocolates tiene María en total?",
       correctAnswer: 14,
       explanation: "(3 × 4) + 2 = 12 + 2 = 14 chocolates",
+      hint: "💡 Pista: Multiplica el número de cajas por los chocolates por caja (3 × 4), luego suma los chocolates sueltos.",
       options: [
         { id: 1, value: 12 },
         { id: 2, value: 14 },
@@ -54,6 +61,7 @@ const Question = () => {
       question: "¿Cuántos pupitres hay en total en el salón?",
       correctAnswer: 42,
       explanation: "6 × 7 = 42 pupitres",
+      hint: "💡 Pista: Multiplica el número de filas (6) por la cantidad de pupitres en cada fila (7). ¿Cuántos pupitres hay en total?",
       options: [
         { id: 1, value: 40 },
         { id: 2, value: 42 },
@@ -68,6 +76,7 @@ const Question = () => {
       question: "¿Cuántos stickers le quedan a Ana?",
       correctAnswer: 27,
       explanation: "(4 × 8) - 5 = 32 - 5 = 27 stickers",
+      hint: "💡 Pista: Primero calcula cuántos stickers tiene en total (4 × 8), luego resta los que regala (5). ¿Cuántos le quedan?",
       options: [
         { id: 1, value: 25 },
         { id: 2, value: 27 },
@@ -82,6 +91,7 @@ const Question = () => {
       question: "¿Cuántos conejos hay en total en la granja?",
       correctAnswer: 48,
       explanation: "(5 × 9) + 3 = 45 + 3 = 48 conejos",
+      hint: "💡 Pista: Multiplica los corrales por los conejos en cada uno (5 × 9), luego suma los 3 conejos que llegan después.",
       options: [
         { id: 1, value: 45 },
         { id: 2, value: 47 },
@@ -146,6 +156,13 @@ const Question = () => {
     
     setUserAnswers(prev => [...prev, answer])
     
+    // Sistema de seguimiento de errores consecutivos
+    if (!answer.isCorrect) {
+      setConsecutiveErrors(prev => prev + 1)
+    } else {
+      setConsecutiveErrors(0) // Reinicia el contador si responde correctamente
+    }
+    
     setTimeout(() => {
       setShowResult(true)
     }, 1500)
@@ -156,6 +173,11 @@ const Question = () => {
       setCurrentQuestionIndex(prev => prev + 1)
       setSelectedAnswer(null)
       setShowResult(false)
+      
+      // Mostrar botón de pista si ha fallado 2 veces consecutivas
+      if (consecutiveErrors >= 2) {
+        setShowHintButton(true)
+      }
     } else {
       setQuizCompleted(true)
     }
@@ -178,6 +200,14 @@ const Question = () => {
         message: `¡Quiz completado! Puntuación: ${scoreOver20}/20`
       }
     })
+  }
+
+  const handleShowHint = () => {
+    setShowHintModal(true)
+  }
+
+  const handleCloseHint = () => {
+    setShowHintModal(false)
   }
 
   const isCorrectAnswer = (value) => {
@@ -424,6 +454,19 @@ const Question = () => {
               </div>
             </div>
 
+            {/* Botón de pista */}
+            {showHintButton && (
+              <div className="mb-4 flex justify-center">
+                <button
+                  onClick={handleShowHint}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+                >
+                  <span>💡</span>
+                  <span>Ver Pista</span>
+                </button>
+              </div>
+            )}
+
             <div className="flex-1 flex items-center justify-center">
               <div className={`${isMobile ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex justify-center space-x-8'} w-full`}>
                 {currentQuestion.options.map((option) => (
@@ -471,6 +514,28 @@ const Question = () => {
               onClick={handleNextQuestion}
             >
               {currentQuestionIndex < totalQuestions - 1 ? 'Siguiente Pregunta →' : 'Ver Resultados'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de pista */}
+      {showHintModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-200 text-center max-w-md w-full transform transition-all duration-500 scale-100">
+            <div className="text-4xl mb-4">💡</div>
+            <h3 className="text-gray-800 text-xl font-bold mb-4">
+              Pista para ayudarte
+            </h3>
+            <p className="text-gray-600 text-base mb-6 leading-relaxed">
+              {currentQuestion.hint}
+            </p>
+            
+            <button 
+              className="w-full py-3 px-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+              onClick={handleCloseHint}
+            >
+              Entendido
             </button>
           </div>
         </div>
