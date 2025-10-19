@@ -18,10 +18,32 @@ const Question = () => {
   const exerciseTitle = location.state?.exerciseTitle || 'Multiplicación'
   const exerciseId = location.state?.exerciseId || 3
 
-  // Estados para el sistema de pistas
   const [consecutiveErrors, setConsecutiveErrors] = useState(0)
   const [showHintButton, setShowHintButton] = useState(false)
   const [showHintModal, setShowHintModal] = useState(false)
+
+  const [quizBackground, setQuizBackground] = useState('')
+
+  const selectRandomBackground = () => {
+    const availableBackgrounds = [
+      'fondo1.jpg',
+      'fondo2.jpg', 
+      'fondo3.jpg',
+      'fondo4.jpg',
+      'fondo5.jpg',
+      'fondo6.jpg',
+      'fondo7.jpg',
+      'fondo8.jpg'
+    ]
+    
+    const randomIndex = Math.floor(Math.random() * availableBackgrounds.length)
+    const selectedBackground = `/images/questions/${availableBackgrounds[randomIndex]}`
+    setQuizBackground(selectedBackground)
+  }
+
+  useEffect(() => {
+    selectRandomBackground()
+  }, [])
 
   const questions = [
     {
@@ -156,11 +178,10 @@ const Question = () => {
     
     setUserAnswers(prev => [...prev, answer])
     
-    // Sistema de seguimiento de errores consecutivos
     if (!answer.isCorrect) {
       setConsecutiveErrors(prev => prev + 1)
     } else {
-      setConsecutiveErrors(0) // Reinicia el contador si responde correctamente
+      setConsecutiveErrors(0)
     }
     
     setTimeout(() => {
@@ -174,7 +195,6 @@ const Question = () => {
       setSelectedAnswer(null)
       setShowResult(false)
       
-      // Mostrar botón de pista si ha fallado 2 veces consecutivas
       if (consecutiveErrors >= 2) {
         setShowHintButton(true)
       }
@@ -358,7 +378,7 @@ const Question = () => {
           className="fixed inset-0"
           style={{
             backgroundColor: '#1a472a',
-            backgroundImage: `url("/images/pregunta.jpeg")`,
+            backgroundImage: quizBackground ? `url("${quizBackground}")` : `url("/images/pregunta.jpeg")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
@@ -407,7 +427,7 @@ const Question = () => {
         className="fixed inset-0"
         style={{
           backgroundColor: '#1a472a',
-          backgroundImage: `url("/images/pregunta.jpeg")`,
+          backgroundImage: quizBackground ? `url("${quizBackground}")` : `url("/images/pregunta.jpeg")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
@@ -519,7 +539,6 @@ const Question = () => {
         </div>
       )}
 
-      {/* Modal de pista */}
       {showHintModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-200 text-center max-w-md w-full transform transition-all duration-500 scale-100">
