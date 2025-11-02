@@ -1,14 +1,20 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
+import { useAuth } from '../contexts/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
   const { isMobile } = useDeviceDetection()
+  const { login, register, isLoading } = useAuth()
   const [formData, setFormData] = useState({
-    nombre: '',
-    contrasena: ''
+    name: '',
+    lastNames: '',
+    passwordNumber: '',
+    age: ''
   })
+  const [error, setError] = useState('')
+  const [isLogin, setIsLogin] = useState(true) // Toggle entre login y registro
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -16,13 +22,59 @@ const Login = () => {
       ...prev,
       [name]: value
     }))
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) setError('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Datos del formulario:', formData)
-    // Navegar al dashboard después del login
-    navigate('/dashboard')
+    setError('')
+
+    if (!formData.name || !formData.lastNames || !formData.passwordNumber) {
+      setError('Todos los campos son obligatorios')
+      return
+    }
+
+    if (!isLogin && !formData.age) {
+      setError('La edad es requerida para el registro')
+      return
+    }
+
+    try {
+      let result;
+      
+      if (isLogin) {
+        // Intentar login
+        result = await login({
+          name: formData.name,
+          lastNames: formData.lastNames,
+          passwordNumber: formData.passwordNumber
+        })
+      } else {
+        // Intentar registro
+        result = await register({
+          name: formData.name,
+          lastNames: formData.lastNames,
+          passwordNumber: formData.passwordNumber,
+          age: parseInt(formData.age)
+        })
+      }
+
+      if (result.success) {
+        console.log(`${isLogin ? 'Login' : 'Registro'} exitoso, rol:`, result.role || result.data)
+        navigate('/dashboard')
+      } else {
+        setError(result.error || `Error en el ${isLogin ? 'login' : 'registro'}`)
+        
+        // Si es error 403 en login, sugerir registro
+        if (isLogin && result.statusCode === 403) {
+          setError(result.error + ' ¿Necesitas registrarte?')
+        }
+      }
+    } catch (err) {
+      console.error(`Error en ${isLogin ? 'login' : 'registro'}:`, err)
+      setError('Error de conexión. Verifica tu conexión a internet.')
+    }
   }
 
   return (
@@ -55,15 +107,20 @@ const Login = () => {
             ¡Hola, Futuro<br />Genio!
           </h1>
           <p className="text-white text-lg opacity-90 leading-relaxed px-2">
-            ¡Regístrate y comienza tu aventura<br />
-            en el mundo de las matemáticas!
+            {isLogin ? '¡Inicia sesión y continúa tu aventura en las matemáticas!' : '¡Regístrate y comienza tu aventura en el mundo de las matemáticas!'}
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500 text-white rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-white text-sm font-medium mb-2">
-              Ingresa tu nombre:
+              Nombre:
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -73,8 +130,8 @@ const Login = () => {
               </div>
               <input
                 type="text"
-                name="nombre"
-                value={formData.nombre}
+                name="name"
+                value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Nombre"
                 className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
@@ -85,7 +142,55 @@ const Login = () => {
 
           <div>
             <label className="block text-white text-sm font-medium mb-2">
-              Ingresa tu contraseña:
+              Apellidos:
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                name="lastNames"
+                value={formData.lastNames}
+                onChange={handleInputChange}
+                placeholder="Apellidos"
+                className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+                required
+              />
+            </div>
+          </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-white text-sm font-medium mb-2">
+                Edad:
+              </label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleInputChange}
+                  placeholder="Edad"
+                  min="5"
+                  max="100"
+                  className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+                  required={!isLogin}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-white text-sm font-medium mb-2">
+              Número de contraseña:
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -94,11 +199,11 @@ const Login = () => {
                 </svg>
               </div>
               <input
-                type="password"
-                name="contrasena"
-                value={formData.contrasena}
+                type="number"
+                name="passwordNumber"
+                value={formData.passwordNumber}
                 onChange={handleInputChange}
-                placeholder="Contraseña"
+                placeholder="Número de contraseña"
                 className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
                 required
               />
@@ -107,10 +212,28 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 mt-6"
+            disabled={isLoading}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            INICIO
+            {isLoading ? 
+              (isLogin ? 'INICIANDO...' : 'REGISTRANDO...') : 
+              (isLogin ? 'INICIAR SESIÓN' : 'REGISTRARSE')
+            }
           </button>
+
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin)
+                setError('')
+                setFormData(prev => ({ ...prev, age: '' }))
+              }}
+              className="text-white text-sm underline hover:text-yellow-200 transition-colors duration-200"
+            >
+              {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión aquí'}
+            </button>
+          </div>
         </form>
       </div>
 

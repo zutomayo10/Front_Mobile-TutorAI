@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useUserProfile } from '../hooks/useUserProfile'
+import { useClassroomData } from '../hooks/useClassroomData'
+import { useAuth } from '../contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 import Avatar from '../components/Avatar'
@@ -11,7 +13,9 @@ import DashboardHeader from '../components/DashboardHeader'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
-  const { profileImage, uploadedImageUrl, userName, isLoading } = useUserProfile()
+  const { profileImage, uploadedImageUrl, userName, isLoading: profileLoading } = useUserProfile()
+  const { classrooms, courses, topics, selectedClassroom, selectedCourse, isLoading: dataLoading } = useClassroomData()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [userLevel] = useState(15)
   const [userExp] = useState({ current: 240, total: 400 })
@@ -19,40 +23,41 @@ const Dashboard = () => {
   const handlePlayChallenge = (challenge) => {
     navigate('/exercises', { 
       state: { 
-        challengeTitle: challenge.title 
+        challengeTitle: challenge.title,
+        classroomId: selectedClassroom?.id,
+        courseId: selectedCourse?.courseId
       } 
     })
   }
 
-  const challenges = [
-    {
-      title: 'Operaciones Combinadas',
-      completed: 3,
-      total: 4,
-      progress: 75,
-      icon: '🧮',
-      color: 'from-purple-500 to-pink-500',
-      shadowColor: 'shadow-purple-500/30'
-    },
-    {
-      title: 'Fracciones',
-      completed: 3,
-      total: 4,
-      progress: 75,
-      icon: '🍕',
-      color: 'from-orange-500 to-red-500',
-      shadowColor: 'shadow-orange-500/30'
-    },
-    {
-      title: 'Geometría Básica',
-      completed: 2,
-      total: 5,
-      progress: 40,
-      icon: '📐',
-      color: 'from-blue-500 to-cyan-500',
-      shadowColor: 'shadow-blue-500/30'
-    }
-  ]
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
+
+  // Convertir aulas/cursos en desafíos para la interfaz existente
+  const challenges = classrooms.map((classroom, index) => ({
+    title: classroom.name || `Aula ${classroom.id}`,
+    completed: Math.floor(Math.random() * 4), // Simulado - se puede mejorar con datos reales
+    total: 4,
+    progress: Math.floor(Math.random() * 100),
+    icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
+    color: [
+      'from-purple-500 to-pink-500',
+      'from-orange-500 to-red-500', 
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-teal-500',
+      'from-yellow-500 to-orange-500'
+    ][index % 5],
+    shadowColor: [
+      'shadow-purple-500/30',
+      'shadow-orange-500/30',
+      'shadow-blue-500/30', 
+      'shadow-green-500/30',
+      'shadow-yellow-500/30'
+    ][index % 5],
+    classroomData: classroom
+  }))
 
   return (
     <div className="min-h-screen relative dashboard-container" style={{ minHeight: '100dvh' }}>
@@ -93,14 +98,31 @@ const Dashboard = () => {
                     <Avatar
                       profileImage={profileImage}
                       uploadedImageUrl={uploadedImageUrl}
-                      isLoading={isLoading}
+                      isLoading={profileLoading}
                       size={isMobile ? "sm" : "md"}
                       className="border-white border-opacity-50 shadow-lg"
                     />
                   </div>
                   <div>
-                    <h2 className="text-white font-bold text-xl drop-shadow-lg">{userName}</h2>
-                    <p className="text-yellow-200 text-sm font-semibold drop-shadow">Nivel {userLevel}</p>
+                    <h2 className="text-white font-bold text-xl drop-shadow-lg">
+                      {userName || 'Estudiante'}
+                    </h2>
+                    <p className="text-yellow-200 text-sm font-semibold drop-shadow">
+                      Nivel {userLevel} | Rol: {user?.role || 'Estudiante'}
+                    </p>
+                    {classrooms.length > 0 && (
+                      <p className="text-green-200 text-xs drop-shadow">
+                        {classrooms.length} aula{classrooms.length !== 1 ? 's' : ''} disponible{classrooms.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                  <div className="ml-auto">
+                    <button
+                      onClick={handleLogout}
+                      className="text-white hover:text-red-300 transition-colors duration-200 text-sm bg-red-500 bg-opacity-50 px-3 py-1 rounded-lg"
+                    >
+                      Cerrar Sesión
+                    </button>
                   </div>
                 </div>
                 <ExperienceBar 
@@ -112,10 +134,47 @@ const Dashboard = () => {
             </div>
 
             <DashboardHeader />
-            <ChallengeList 
-              challenges={challenges}
-              onPlayChallenge={handlePlayChallenge}
-            />
+            
+            {dataLoading ? (
+              <div className="text-center py-8">
+                <div className="text-white text-lg">Cargando tus aulas...</div>
+              </div>
+            ) : challenges.length > 0 ? (
+              <>
+                <ChallengeList 
+                  challenges={challenges}
+                  onPlayChallenge={handlePlayChallenge}
+                />
+                
+                {/* Botón flotante para unirse a más aulas */}
+                <div className="fixed bottom-24 right-4 z-30">
+                  <button
+                    onClick={() => navigate('/join-classroom')}
+                    className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+                    title="Unirse a un aula"
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-white text-lg mb-4">
+                  Aún no tienes aulas asignadas
+                </div>
+                <p className="text-white text-sm opacity-80 mb-4">
+                  Contacta a tu profesor para que te agregue a un aula
+                </p>
+                <button
+                  onClick={() => navigate('/join-classroom')}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Unirse a un Aula
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
