@@ -156,6 +156,50 @@ export const teacherGetTopics = getTopics;
 export const studentGetTopics = getTopics;
 
 /** =========================
+ *  Student flow (nuevos endpoints)
+ * ========================= */
+
+// GET /classrooms/:classroomId/courses/:courseId/topics/:topicNumber/levels
+export const studentGetLevels = async (classroomId, courseId, topicNumber) => {
+  const { data } = await api.get(
+    `/classrooms/${classroomId}/courses/${courseId}/topics/${topicNumber}/levels`,
+    { headers: authHeaders() }
+  );
+  return data; // [{ levelNumber, name }]
+};
+
+// GET /student/classroom/:classroomId/course/:courseId/topic/:topicNumber/level/:levelNumber/exercises
+export const studentGetExercises = async (
+  classroomId,
+  courseId,
+  topicNumber,
+  levelNumber
+) => {
+  const { data } = await api.get(
+    `/student/classroom/${classroomId}/course/${courseId}/topic/${topicNumber}/level/${levelNumber}/exercises`,
+    { headers: authHeaders() }
+  );
+  return data; // [{ exerciseNumber, question, optionA, optionB, ... }]
+};
+
+// POST /student/classroom/:classroomId/course/:courseId/topic/:topicNumber/level/:levelNumber/exercises/:exerciseNumber/answer
+export const studentMarkOption = async (
+  classroomId,
+  courseId,
+  topicNumber,
+  levelNumber,
+  exerciseNumber,
+  markedOption
+) => {
+  const { data, status } = await api.post(
+    `/student/classroom/${classroomId}/course/${courseId}/topic/${topicNumber}/level/${levelNumber}/exercises/${exerciseNumber}/answer`,
+    { markedOption },
+    { headers: authHeaders() }
+  );
+  return { status, data };
+};
+
+/** =========================
  *  Chat Teacher-Assistant
  * ========================= */
 // POST /messages/classrooms/:classroomId/courses/:courseId/topics/:topicNumber/boot

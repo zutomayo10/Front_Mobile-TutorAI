@@ -6,6 +6,8 @@ import Profile from './pages/Profile'
 import Exercises from './pages/Exercises'
 import Question from './pages/Question'
 import JoinClassroom from './pages/JoinClassroom'
+import Topics from './pages/Topics'
+import Levels from './pages/Levels'
 import { useDeviceDetection } from './hooks/useDeviceDetection'
 import { useAuth } from './contexts/AuthContext'
 
@@ -94,6 +96,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <JoinClassroom />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/topics" 
+            element={
+              <ProtectedRoute>
+                <Topics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/levels" 
+            element={
+              <ProtectedRoute>
+                <Levels />
               </ProtectedRoute>
             } 
           />

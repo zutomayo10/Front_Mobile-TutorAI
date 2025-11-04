@@ -21,13 +21,22 @@ const Dashboard = () => {
   const [userExp] = useState({ current: 240, total: 400 })
 
   const handlePlayChallenge = (challenge) => {
-    navigate('/exercises', { 
-      state: { 
-        challengeTitle: challenge.title,
-        classroomId: selectedClassroom?.id,
-        courseId: selectedCourse?.courseId
-      } 
-    })
+    // Si el desafío tiene datos de aula real, navegar a los temas
+    if (challenge.classroomData) {
+      navigate('/topics', { 
+        state: { 
+          classroomId: challenge.classroomData.id,
+          classroomName: challenge.classroomData.name
+        } 
+      })
+    } else {
+      // Fallback al sistema anterior
+      navigate('/exercises', { 
+        state: { 
+          challengeTitle: challenge.title
+        } 
+      })
+    }
   }
 
   const handleLogout = () => {
