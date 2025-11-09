@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 /** =========================
  *  Config & helpers
  * ========================= */
-export const BACKEND_URL = "http://213.199.42.57:7102";
+export const BACKEND_URL = "http://213.199.42.57:8082";
 
 const api = axios.create({
   baseURL: BACKEND_URL,
@@ -237,3 +237,16 @@ export const logout = () => clearToken();
 
 // Alias para mantener tu import previo
 export const fetchLogin = async (body) => loginTeacher(body);
+
+/** =========================
+ *  User info (único endpoint para ambos roles)
+ * ========================= */
+// GET /user/info
+export const getUserInfo = async () => {
+  const { data } = await api.get("/user/info", { headers: authHeaders() });
+  // data -> { name, lastNames, age }
+  return data;
+};
+// Alias por conveniencia (mismo endpoint)
+export const getStudentInfo = getUserInfo;
+export const getTeacherInfo = getUserInfo;

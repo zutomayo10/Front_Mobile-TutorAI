@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useClassroomData } from '../hooks/useClassroomData'
+import { useGameStats } from '../hooks/useGameStats'
 import { useAuth } from '../contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
@@ -13,12 +14,11 @@ import DashboardHeader from '../components/DashboardHeader'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
-  const { profileImage, uploadedImageUrl, userName, isLoading: profileLoading } = useUserProfile()
+  const { profileImage, uploadedImageUrl, isLoading: profileLoading } = useUserProfile()
   const { classrooms, courses, topics, selectedClassroom, selectedCourse, isLoading: dataLoading } = useClassroomData()
-  const { user, logout } = useAuth()
+  const { user, userInfo, logout } = useAuth()
+  const { stats, accuracy, progressPercentage, isNewUser } = useGameStats()
   const navigate = useNavigate()
-  const [userLevel] = useState(15)
-  const [userExp] = useState({ current: 240, total: 400 })
 
   const handlePlayChallenge = (challenge) => {
     // Si el desafío tiene datos de aula real, navegar a los temas
@@ -114,16 +114,26 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <h2 className="text-white font-bold text-xl drop-shadow-lg">
-                      {userName || 'Estudiante'}
+                      {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : 'Estudiante'}
                     </h2>
                     <p className="text-yellow-200 text-sm font-semibold drop-shadow">
-                      Nivel {userLevel} | Rol: {user?.role || 'Estudiante'}
+                      Nivel {stats.level} | Rol: {user?.role || 'Estudiante'}
+                      {userInfo?.age && ` | Edad: ${userInfo.age}`}
                     </p>
-                    {classrooms.length > 0 && (
-                      <p className="text-green-200 text-xs drop-shadow">
-                        {classrooms.length} aula{classrooms.length !== 1 ? 's' : ''} disponible{classrooms.length !== 1 ? 's' : ''}
-                      </p>
-                    )}
+                    <div className="text-green-200 text-xs drop-shadow space-y-1">
+                      {classrooms.length > 0 && (
+                        <p>{classrooms.length} aula{classrooms.length !== 1 ? 's' : ''} disponible{classrooms.length !== 1 ? 's' : ''}</p>
+                      )}
+                      {stats.exercisesCompleted > 0 && (
+                        <p>✅ {stats.exercisesCompleted} ejercicios completados</p>
+                      )}
+                      {accuracy > 0 && (
+                        <p>🎯 {accuracy}% de precisión</p>
+                      )}
+                      {isNewUser && (
+                        <p>🌟 ¡Bienvenido! Comienza tu aventura matemática</p>
+                      )}
+                    </div>
                   </div>
                   <div className="ml-auto">
                     <button
@@ -135,8 +145,8 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <ExperienceBar 
-                  currentExp={userExp.current}
-                  totalExp={userExp.total}
+                  currentExp={stats.experience.current}
+                  totalExp={stats.experience.total}
                   isMobile={isMobile}
                 />
               </div>

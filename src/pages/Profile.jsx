@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useUserProfile } from '../hooks/useUserProfile'
+import { useGameStats } from '../hooks/useGameStats'
+import { useAuth } from '../contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 import Avatar from '../components/Avatar'
@@ -16,13 +18,8 @@ const Profile = () => {
     updateUploadedImage, 
     getCurrentAvatar 
   } = useUserProfile()
-  
-  const [userLevel] = useState(15)
-  const [userExp] = useState({ current: 240, total: 400 })
-  const [completedChallenges] = useState(3)
-  const [totalChallenges] = useState(15)
-  const [achievements] = useState(10)
-  const [totalAchievements] = useState(20)
+  const { userInfo, user, loadUserInfo } = useAuth()
+  const { stats, accuracy, progressPercentage } = useGameStats()
   
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   
@@ -80,29 +77,11 @@ const Profile = () => {
     return { type: 'emoji', value: profileImage }
   }
 
-  const logros = [
-    {
-      id: 1,
-      name: 'Primer Desafío',
-      icon: '🥉',
-      color: 'from-orange-400 to-orange-600',
-      achieved: true
-    },
-    {
-      id: 2,
-      name: 'Matemático Plata',
-      icon: '🥈',
-      color: 'from-gray-400 to-gray-600',
-      achieved: true
-    },
-    {
-      id: 3,
-      name: 'Experto Oro',
-      icon: '🏆',
-      color: 'from-yellow-400 to-yellow-600',
-      achieved: false
-    }
-  ]
+  // Variables dinámicas basadas en estadísticas reales
+  const userLevel = stats.level
+  const totalAchievements = 6 // Total de logros disponibles
+  const achievedCount = Math.min(Math.floor(stats.level / 2), totalAchievements) // Logros basados en nivel
+  const achievements = achievedCount
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -163,8 +142,15 @@ const Profile = () => {
                     <div className="absolute bottom-2 -left-3 text-yellow-300 text-lg">💫</div>
                   </div>
                   <div className="rounded-2xl px-6 py-3 inline-block border-2 border-white/30 shadow-xl" style={{backgroundColor: '#CBF3DC'}}>
-                    <h1 className="text-gray-800 text-3xl font-bold drop-shadow-2xl mb-1">🌟 {userName} 🌟</h1>
+                    <h1 className="text-gray-800 text-3xl font-bold drop-shadow-2xl mb-1">
+                      🌟 {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : (userName || 'Estudiante')} 🌟
+                    </h1>
                     <p className="text-green-700 text-lg font-semibold drop-shadow">¡Mago Matemático en Entrenamiento!</p>
+                    {userInfo && (
+                      <div className="text-green-600 text-sm mt-1">
+                        {userInfo.age && `${userInfo.age} años`} | {user?.role || 'Estudiante'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -178,85 +164,64 @@ const Profile = () => {
                     <span className="text-white font-semibold">Experiencia</span>
                   </div>
                   <div className="rounded-full px-4 py-1 border border-white/30" style={{backgroundColor: '#F19506'}}>
-                    <span className="text-white text-sm font-bold">{userExp.current}/{userExp.total} XP</span>
+                    <span className="text-white text-sm font-bold">{stats.experience.current}/{stats.experience.total} XP</span>
                   </div>
                 </div>
                 <div className="relative">
                   <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/20">
                     <div 
                       className="h-full rounded-full transition-all duration-1000 relative"
-                      style={{ width: `${(userExp.current / userExp.total) * 100}%`, backgroundColor: '#3FD47E' }}
+                      style={{ width: `${progressPercentage}%`, backgroundColor: '#3FD47E' }}
                     >
                     </div>
                   </div>
                   <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                     <span className="text-white text-xs font-bold drop-shadow-lg">
-                      {Math.round((userExp.current / userExp.total) * 100)}%
+                      {progressPercentage}%
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Información del Usuario */}
             <div className="mb-6">
               <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">📚</div>
-                    <div className="text-gray-700 text-xs font-bold">Lecciones Completadas</div>
-                    <div className="text-green-700 text-xl font-bold drop-shadow">8</div>
-                  </div>
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">🎯</div>
-                    <div className="text-gray-700 text-xs font-bold">Precisión</div>
-                    <div className="text-green-700 text-xl font-bold drop-shadow">87%</div>
-                  </div>
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-yellow-300 text-xl">👤</span>
+                  <span className="text-white font-semibold">Información Personal</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
-                <h2 className="text-white text-2xl font-bold mb-4 text-center drop-shadow-lg">
-                  <span className="inline-block">🏆</span>
-                  <span className="mx-3">Tus Increíbles Logros</span>
-                  <span className="inline-block">🏆</span>
-                </h2>
-                <div className="flex justify-center space-x-8 mb-4">
-                  {logros.map((logro, index) => (
-                    <div
-                      key={logro.id}
-                      className="relative cursor-pointer group"
-                    >
-                      <div
-                        className={`w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-2xl relative transform transition-all duration-300 ${
-                          logro.achieved
-                            ? `bg-gradient-to-br ${logro.color} border-white`
-                            : 'bg-gray-600 border-gray-500 opacity-60'
-                        }`}
-                      >
-                        <span className="text-3xl filter drop-shadow-lg">{logro.icon}</span>
-                        {logro.achieved && (
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-transparent opacity-80"></div>
-                        )}
-                        {logro.achieved && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                            <span className="text-xs">✨</span>
-                          </div>
-                        )}
-                      </div>
+                
+                {userInfo ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl p-3 border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                      <div className="text-green-700 text-sm font-semibold">Nombre Completo</div>
+                      <div className="text-gray-800 font-bold">{userInfo.name} {userInfo.lastNames}</div>
                     </div>
-                  ))}
-                </div>
-                <div className="text-center">
-                  <button className="text-white font-bold py-3 px-8 rounded-full shadow-xl transition-all duration-300 border-2 border-white/50 hover:opacity-90" style={{backgroundColor: '#F19506'}}>
-                    <span className="flex items-center space-x-2">
-                      <span className="text-lg">🎯</span>
-                      <span>¡Ver Todos los Logros!</span>
-                      <span className="text-lg">✨</span>
-                    </span>
-                  </button>
-                </div>
+                    
+                    <div className="rounded-2xl p-3 border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                      <div className="text-green-700 text-sm font-semibold">Edad</div>
+                      <div className="text-gray-800 font-bold">{userInfo.age} años</div>
+                    </div>
+                    
+                    <div className="rounded-2xl p-3 border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                      <div className="text-green-700 text-sm font-semibold">Rol</div>
+                      <div className="text-gray-800 font-bold">{user?.role || 'Estudiante'}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="text-white text-sm opacity-80 mb-2">
+                      No se pudo cargar la información del usuario
+                    </div>
+                    <button
+                      onClick={handleRefreshUserInfo}
+                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-all duration-200"
+                    >
+                      Intentar de nuevo
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -267,21 +232,27 @@ const Profile = () => {
                   <span>Tu Progreso Fantástico</span>
                   <span className="ml-2 text-2xl">🚀</span>
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                    <div className="text-3xl mb-2">📚</div>
+                    <div className="text-gray-700 font-bold text-lg">Ejercicios Completados</div>
+                    <div className="text-green-700 text-2xl font-bold">{stats.exercisesCompleted}</div>
+                  </div>
                   <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">🎯</div>
-                    <div className="text-gray-700 font-bold text-lg">Desafíos</div>
-                    <div className="text-green-700 text-2xl font-bold">{completedChallenges}/{totalChallenges}</div>
-                    <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 rounded-full"
-                        style={{ width: `${(completedChallenges / totalChallenges) * 100}%`, backgroundColor: '#3FD47E' }}
-                      ></div>
+                    <div className="text-gray-700 font-bold text-lg">Precisión</div>
+                    <div className="text-green-700 text-2xl font-bold">
+                      {stats.totalAnswers > 0 ? `${accuracy}%` : 'N/A'}
                     </div>
                   </div>
                   <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                    <div className="text-3xl mb-2">⭐</div>
+                    <div className="text-gray-700 font-bold text-lg">Niveles Completados</div>
+                    <div className="text-green-700 text-2xl font-bold">{stats.levelsCompleted}</div>
+                  </div>
+                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
                     <div className="text-3xl mb-2">🏅</div>
-                    <div className="text-gray-700 font-bold text-lg">Logros</div>
+                    <div className="text-gray-700 font-bold text-lg">Logros Desbloqueados</div>
                     <div className="text-green-700 text-2xl font-bold">{achievements}/{totalAchievements}</div>
                     <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
                       <div 

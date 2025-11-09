@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useExercises } from '../hooks/useExercises'
+import { useGameStats } from '../hooks/useGameStats'
 import BottomNavigation from '../components/BottomNavigation'
 import Sidebar from '../components/Sidebar'
 
@@ -9,8 +10,9 @@ const Exercises = () => {
   const { isMobile } = useDeviceDetection()
   const navigate = useNavigate()
   const location = useLocation()
+  const { completeExercise, completeLevel } = useGameStats()
   
-  // Obtener datos del estado de navegación
+  // Datos desde la navegación
   const { 
     classroomId, 
     courseId, 
@@ -35,6 +37,7 @@ const Exercises = () => {
     progressPercentage
   } = useExercises()
 
+  // ⬇️ Ahora guarda solo la letra: "A" | "B" | "C" | "D" | "E"
   const [selectedOption, setSelectedOption] = useState(null)
   const [showResult, setShowResult] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
@@ -44,13 +47,13 @@ const Exercises = () => {
       navigate('/dashboard')
       return
     }
-
     loadExercises(classroomId, courseId, topicNumber, levelNumber)
   }, [classroomId, courseId, topicNumber, levelNumber])
 
-  const handleOptionSelect = (optionKey) => {
+  // ⬇️ Recibe la letra
+  const handleOptionSelect = (letter) => {
     if (showResult) return
-    setSelectedOption(optionKey)
+    setSelectedOption(letter)
   }
 
   const handleSubmitAnswer = async () => {
@@ -63,12 +66,23 @@ const Exercises = () => {
         topicNumber,
         levelNumber,
         currentExercise.exerciseNumber,
-        selectedOption
+        selectedOption   // ⬅️ enviamos la letra ("A", "B", "C"...)
       )
 
       if (result.success) {
         setAnswerResult(result.data)
         setShowResult(true)
+        
+        // Actualizar estadísticas del juego
+        const isCorrect = result.data?.isCorrect || false
+        completeExercise(isCorrect)
+        
+        // Mostrar feedback visual
+        if (isCorrect) {
+          console.log('¡Respuesta correcta! +15 XP')
+        } else {
+          console.log('Respuesta incorrecta. +5 XP por intentar')
+        }
       } else {
         alert('Error al enviar la respuesta: ' + result.error)
       }
@@ -85,7 +99,6 @@ const Exercises = () => {
       setShowResult(false)
       setAnswerResult(null)
     } else {
-      // Último ejercicio completado
       alert('¡Felicidades! Has completado todos los ejercicios de este nivel.')
       navigate('/dashboard')
     }
@@ -151,21 +164,21 @@ const Exercises = () => {
     )
   }
 
-  // Obtener las opciones disponibles del ejercicio actual
+  // Construir opciones: mantenemos key para leer el texto, pero la selección usa la letra
   const getExerciseOptions = () => {
     const options = []
     const optionKeys = ['optionA', 'optionB', 'optionC', 'optionD', 'optionE']
     
     optionKeys.forEach((key, index) => {
-      if (currentExercise[key]) {
+      const text = currentExercise[key]
+      if (text) {
         options.push({
-          key: key,
-          letter: String.fromCharCode(65 + index), // A, B, C, D, E
-          text: currentExercise[key]
+          key,                               // optionA | optionB | ...
+          letter: String.fromCharCode(65 + index), // "A" | "B" | ...
+          text
         })
       }
     })
-    
     return options
   }
 
@@ -250,17 +263,17 @@ const Exercises = () => {
                 {exerciseOptions.map((option) => (
                   <button
                     key={option.key}
-                    onClick={() => handleOptionSelect(option.key)}
+                    onClick={() => handleOptionSelect(option.letter)}
                     disabled={showResult}
                     className={`w-full p-4 text-left rounded-lg border-2 transition-all duration-200 ${
-                      selectedOption === option.key
+                      selectedOption === option.letter
                         ? 'border-orange-500 bg-orange-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     } ${showResult ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
-                        selectedOption === option.key
+                        selectedOption === option.letter
                           ? 'border-orange-500 bg-orange-500 text-white'
                           : 'border-gray-300 text-gray-600'
                       }`}>

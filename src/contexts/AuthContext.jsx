@@ -5,7 +5,8 @@ import {
   getRoleBasedOnToken, 
   logout as apiLogout,
   loginStudent,
-  registerStudent 
+  registerStudent,
+  getUserInfo
 } from '../services/api';
 
 const AuthContext = createContext();
@@ -20,8 +21,21 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Cargar información del usuario autenticado
+  const loadUserInfo = async () => {
+    try {
+      const info = await getUserInfo();
+      setUserInfo(info);
+      return info;
+    } catch (error) {
+      console.error('Error cargando información del usuario:', error);
+      return null;
+    }
+  };
 
   // Verificar si hay un token válido al cargar la aplicación
   useEffect(() => {
@@ -32,6 +46,8 @@ export const AuthProvider = ({ children }) => {
         if (role) {
           setUser({ role });
           setIsAuthenticated(true);
+          // Cargar información del usuario
+          loadUserInfo();
         }
       } catch (error) {
         console.error('Error al verificar token:', error);
@@ -59,6 +75,8 @@ export const AuthProvider = ({ children }) => {
       if (response) {
         setUser({ role: response });
         setIsAuthenticated(true);
+        // Cargar información del usuario después del login exitoso
+        await loadUserInfo();
         return { success: true, role: response };
       }
       
@@ -110,6 +128,8 @@ export const AuthProvider = ({ children }) => {
         const role = getRoleBasedOnToken();
         setUser({ role });
         setIsAuthenticated(true);
+        // Cargar información del usuario después del registro exitoso
+        await loadUserInfo();
         return { success: true, data: response };
       }
       
@@ -144,16 +164,19 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     apiLogout();
     setUser(null);
+    setUserInfo(null);
     setIsAuthenticated(false);
   };
 
   const value = {
     user,
+    userInfo,
     isAuthenticated,
     isLoading,
     login,
     register,
-    logout
+    logout,
+    loadUserInfo
   };
 
   return (
