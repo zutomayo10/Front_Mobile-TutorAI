@@ -1,12 +1,15 @@
 import React from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '../hooks/useUserProfile'
+import { useAuth } from '../contexts/AuthContext'
 import Avatar from './Avatar'
+import UserInfo from './UserInfo'
 
 const Sidebar = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { profileImage, uploadedImageUrl, userName, isLoading } = useUserProfile()
+  const { profileImage, uploadedImageUrl, isLoading } = useUserProfile()
+  const { userInfo } = useAuth()
   
   const navItems = [
     {
@@ -37,8 +40,12 @@ const Sidebar = () => {
                 className="border-2 border-white shadow-lg"
               />
             </div>
-            <h1 className="text-white text-xl font-bold drop-shadow-lg">{userName}</h1>
-            <p className="text-yellow-200 text-sm font-semibold">Estudiante</p>
+            <div className="text-white text-lg font-bold drop-shadow-lg">
+              {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : 'Estudiante'}
+            </div>
+            <p className="text-yellow-200 text-sm font-semibold">
+              {userInfo?.age ? `${userInfo.age} años | Estudiante` : 'Estudiante'}
+            </p>
           </div>
         </div>
         

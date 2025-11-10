@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Exercises from './pages/Exercises'
 import Question from './pages/Question'
+import JoinClassroom from './pages/JoinClassroom'
+import Topics from './pages/Topics'
+import Levels from './pages/Levels'
 import { useDeviceDetection } from './hooks/useDeviceDetection'
+import { useAuth } from './contexts/AuthContext'
+
+// Componente para rutas protegidas
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth()
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-green-800">
+        <div className="text-white text-xl">Cargando...</div>
+      </div>
+    )
+  }
+  
+  return isAuthenticated ? children : <Navigate to="/" replace />
+}
 
 function App() {
   const { isMobile, isTablet, isDesktop } = useDeviceDetection()
+  const { isAuthenticated } = useAuth()
   const [isOnline, setIsOnline] = useState(navigator.onLine)
 
   useEffect(() => {
@@ -33,11 +53,68 @@ function App() {
       
       <main>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/exercises" element={<Exercises />} />
-          <Route path="/question" element={<Question />} />
+          <Route 
+            path="/" 
+            element={
+              isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/exercises" 
+            element={
+              <ProtectedRoute>
+                <Exercises />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/question" 
+            element={
+              <ProtectedRoute>
+                <Question />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/join-classroom" 
+            element={
+              <ProtectedRoute>
+                <JoinClassroom />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/topics" 
+            element={
+              <ProtectedRoute>
+                <Topics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/levels" 
+            element={
+              <ProtectedRoute>
+                <Levels />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </main>
     </div>
