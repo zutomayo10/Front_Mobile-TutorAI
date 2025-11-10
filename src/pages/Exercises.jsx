@@ -42,6 +42,28 @@ const Exercises = () => {
   const [showResult, setShowResult] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
 
+  // Efecto para verificar si el ejercicio actual ya fue respondido
+  useEffect(() => {
+    if (currentExercise && exerciseProgress.answers) {
+      const exerciseAnswer = exerciseProgress.answers[currentExercise.exerciseNumber]
+      
+      if (exerciseAnswer) {
+        // Este ejercicio ya fue respondido, mostrar el estado bloqueado
+        setSelectedOption(exerciseAnswer.markedOption)
+        setShowResult(true)
+        setAnswerResult({
+          isCorrect: exerciseAnswer.isCorrect,
+          markedOption: exerciseAnswer.markedOption
+        })
+      } else {
+        // Ejercicio nuevo, resetear estado
+        setSelectedOption(null)
+        setShowResult(false)
+        setAnswerResult(null)
+      }
+    }
+  }, [currentExercise, exerciseProgress.answers])
+
   useEffect(() => {
     if (!classroomId || !courseId || topicNumber === undefined || levelNumber === undefined) {
       navigate('/dashboard')
@@ -95,9 +117,7 @@ const Exercises = () => {
   const handleNextExercise = () => {
     const moved = nextExercise()
     if (moved) {
-      setSelectedOption(null)
-      setShowResult(false)
-      setAnswerResult(null)
+      // No resetear estado aquí - el useEffect se encarga de manejar el estado según si el ejercicio fue respondido
     } else {
       alert('¡Felicidades! Has completado todos los ejercicios de este nivel.')
       navigate('/dashboard')
@@ -107,9 +127,7 @@ const Exercises = () => {
   const handlePreviousExercise = () => {
     const moved = previousExercise()
     if (moved) {
-      setSelectedOption(null)
-      setShowResult(false)
-      setAnswerResult(null)
+      // No resetear estado aquí - el useEffect se encarga de manejar el estado según si el ejercicio fue respondido
     }
   }
 

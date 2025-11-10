@@ -18,10 +18,21 @@ const Login = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    
+    // Para el campo de contraseña numérica, solo permitir números
+    if (name === 'passwordNumber') {
+      const numericValue = value.replace(/[^0-9]/g, '')
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
+    
     // Limpiar error cuando el usuario empiece a escribir
     if (error) setError('')
   }
@@ -199,12 +210,14 @@ const Login = () => {
                 </svg>
               </div>
               <input
-                type="number"
+                type="password"
                 name="passwordNumber"
                 value={formData.passwordNumber}
                 onChange={handleInputChange}
                 placeholder="Número de contraseña"
                 className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+                pattern="[0-9]*"
+                inputMode="numeric"
                 required
               />
             </div>
