@@ -33,18 +33,30 @@ const ChestButton = ({
 
   return (
     <div
-      onClick={() => !selectedAnswer && onSelect(option.id, option.value)}
-      className="relative cursor-pointer transform transition-all duration-300 hover:scale-110"
+      className="relative flex flex-col items-center"
       style={getChestStyle()}
     >
+      {/* Texto de la opción ENCIMA del cofre */}
+      {option.text && (
+        <div className="mb-3 max-w-xs text-center pointer-events-none">
+          <div className="rounded-lg px-4 py-2 shadow-lg border-2 border-green-400" style={{backgroundColor: 'rgba(35, 155, 86, 0.9)'}}>
+            <p className="text-white font-semibold text-sm leading-tight">
+              {option.text}
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div 
-        className="relative flex items-center justify-center"
+        onClick={() => !selectedAnswer && onSelect(option.id, option.value)}
+        className="relative flex items-center justify-center cursor-pointer transform transition-all duration-300 hover:scale-110"
         style={containerStyle}
       >
         <img 
           src={getChestImage(option)}
-          alt="Cofre"
-          className="w-full h-full object-contain drop-shadow-2xl transition-all duration-500"
+          alt=""
+          className="w-full h-full object-contain drop-shadow-2xl transition-all duration-500 select-none"
+          draggable="false"
         />
         
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -57,18 +69,14 @@ const ChestButton = ({
         </div>
         
         {selectedAnswer?.id === option.id && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {isCorrectAnswer(option.value) ? (
               <div className="absolute inset-0 animate-pulse">
                 <div className="absolute inset-0 bg-green-400 opacity-20 rounded-full"></div>
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-4xl animate-bounce">✨</div>
-                <div className="absolute top-1/4 right-0 text-3xl animate-pulse delay-100">🎉</div>
-                <div className="absolute top-1/4 left-0 text-3xl animate-pulse delay-200">⭐</div>
               </div>
             ) : (
               <div className="absolute inset-0 animate-pulse">
                 <div className="absolute inset-0 bg-red-400 opacity-20 rounded-full"></div>
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-4xl animate-bounce">😞</div>
               </div>
             )}
           </div>

@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 /** =========================
  *  Config & helpers
  * ========================= */
-export const BACKEND_URL = "http://213.199.42.57:8082";
+export const BACKEND_URL = "http://213.199.42.57:8084";
 //export const BACKEND_URL = "http://localhost:8080";
 
 const api = axios.create({

@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useAuth } from '../contexts/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isMobile } = useDeviceDetection()
   const { login, register, isLoading } = useAuth()
   const [formData, setFormData] = useState({
@@ -14,7 +15,20 @@ const Login = () => {
     age: ''
   })
   const [error, setError] = useState('')
-  const [isLogin, setIsLogin] = useState(true) // Toggle entre login y registro
+  
+  // Determinar si está en modo login o registro basado en la ruta
+  const isLogin = location.pathname === '/login'
+
+  // Limpiar formulario cuando cambia la ruta
+  useEffect(() => {
+    setFormData({
+      name: '',
+      lastNames: '',
+      passwordNumber: '',
+      age: ''
+    })
+    setError('')
+  }, [location.pathname])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -238,9 +252,7 @@ const Login = () => {
             <button
               type="button"
               onClick={() => {
-                setIsLogin(!isLogin)
-                setError('')
-                setFormData(prev => ({ ...prev, age: '' }))
+                navigate(isLogin ? '/register' : '/login')
               }}
               className="text-white text-sm underline hover:text-yellow-200 transition-colors duration-200"
             >

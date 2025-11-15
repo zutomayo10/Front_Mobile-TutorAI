@@ -9,7 +9,7 @@ const Sidebar = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { profileImage, uploadedImageUrl, isLoading } = useUserProfile()
-  const { userInfo } = useAuth()
+  const { userInfo, logout } = useAuth()
   
   const navItems = [
     {
@@ -27,8 +27,8 @@ const Sidebar = () => {
   ]
 
   return (
-    <div className="sidebar-desktop fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40">
-      <div className="p-6 relative z-10">
+    <div className="sidebar-desktop fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 shadow-2xl z-40 flex flex-col">
+      <div className="p-6 relative z-10 flex-1 flex flex-col">
         <div className="mb-8 text-center">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border-2 border-white border-opacity-30 shadow-lg">
             <div className="mb-3 flex justify-center">
@@ -49,7 +49,7 @@ const Sidebar = () => {
           </div>
         </div>
         
-        <nav className="space-y-4">
+        <nav className="space-y-4 flex-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
             return (
@@ -75,6 +75,27 @@ const Sidebar = () => {
             )
           })}
         </nav>
+        
+        {/* Botón de cerrar sesión */}
+        <div className="mt-8">
+          <button
+            onClick={() => {
+              logout()
+              navigate('/login')
+            }}
+            className="w-full group relative overflow-hidden rounded-2xl transition-all duration-300 transform hover:scale-105 bg-red-500 bg-opacity-20 hover:bg-opacity-30 border border-red-400 border-opacity-50"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+            <div className="relative p-4 flex items-center space-x-3">
+              <div className="text-2xl transform transition-transform duration-300 group-hover:scale-110">
+                🚪
+              </div>
+              <span className="font-bold text-sm drop-shadow text-white text-opacity-90 group-hover:text-white">
+                CERRAR SESIÓN
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -16,7 +16,7 @@ const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
   const { profileImage, uploadedImageUrl, isLoading: profileLoading } = useUserProfile()
   const { classrooms, courses, topics, selectedClassroom, selectedCourse, isLoading: dataLoading } = useClassroomData()
-  const { user, userInfo, logout } = useAuth()
+  const { user, userInfo } = useAuth()
   const { stats, accuracy, progressPercentage, isNewUser } = useGameStats()
   const navigate = useNavigate()
 
@@ -39,34 +39,73 @@ const Dashboard = () => {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
-
   // Convertir aulas/cursos en desafíos para la interfaz existente
-  const challenges = classrooms.map((classroom, index) => ({
-    title: classroom.name || `Aula ${classroom.id}`,
-    completed: Math.floor(Math.random() * 4), // Simulado - se puede mejorar con datos reales
-    total: 4,
-    progress: Math.floor(Math.random() * 100),
-    icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
-    color: [
-      'from-purple-500 to-pink-500',
-      'from-orange-500 to-red-500', 
-      'from-blue-500 to-cyan-500',
-      'from-green-500 to-teal-500',
-      'from-yellow-500 to-orange-500'
-    ][index % 5],
-    shadowColor: [
-      'shadow-purple-500/30',
-      'shadow-orange-500/30',
-      'shadow-blue-500/30', 
-      'shadow-green-500/30',
-      'shadow-yellow-500/30'
-    ][index % 5],
-    classroomData: classroom
-  }))
+  const challenges = classrooms.map((classroom, index) => {
+    // Calcular progreso real basado en ejercicios completados
+    const totalExercisesCompleted = stats.exercisesCompleted || 0
+    const totalLevelsCompleted = stats.levelsCompleted || 0
+    
+    // Si no hay progreso, mostrar 0 en todo
+    if (totalExercisesCompleted === 0) {
+      return {
+        title: classroom.name || `Aula ${classroom.id}`,
+        completed: 0,
+        total: 4,
+        progress: 0,
+        icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
+        color: [
+          'from-purple-500 to-pink-500',
+          'from-orange-500 to-red-500', 
+          'from-blue-500 to-cyan-500',
+          'from-green-500 to-teal-500',
+          'from-yellow-500 to-orange-500'
+        ][index % 5],
+        shadowColor: [
+          'shadow-purple-500/30',
+          'shadow-orange-500/30',
+          'shadow-blue-500/30', 
+          'shadow-green-500/30',
+          'shadow-yellow-500/30'
+        ][index % 5],
+        classroomData: classroom
+      }
+    }
+    
+    // Calcular progreso por aula (distribución estimada)
+    const estimatedExercisesPerClassroom = 10
+    const startRange = estimatedExercisesPerClassroom * index
+    const endRange = estimatedExercisesPerClassroom * (index + 1)
+    const completedInThisClassroom = Math.max(0, Math.min(totalExercisesCompleted - startRange, estimatedExercisesPerClassroom))
+    const progressInClassroom = Math.min(Math.round((completedInThisClassroom / estimatedExercisesPerClassroom) * 100), 100)
+    
+    // Calcular misiones completadas basado en niveles reales completados
+    const totalMissions = 4
+    const levelsForThisClassroom = Math.floor(totalLevelsCompleted / classrooms.length) + (index < (totalLevelsCompleted % classrooms.length) ? 1 : 0)
+    const completedMissions = Math.min(levelsForThisClassroom, totalMissions)
+    
+    return {
+      title: classroom.name || `Aula ${classroom.id}`,
+      completed: completedMissions,
+      total: totalMissions,
+      progress: progressInClassroom,
+      icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
+      color: [
+        'from-purple-500 to-pink-500',
+        'from-orange-500 to-red-500', 
+        'from-blue-500 to-cyan-500',
+        'from-green-500 to-teal-500',
+        'from-yellow-500 to-orange-500'
+      ][index % 5],
+      shadowColor: [
+        'shadow-purple-500/30',
+        'shadow-orange-500/30',
+        'shadow-blue-500/30', 
+        'shadow-green-500/30',
+        'shadow-yellow-500/30'
+      ][index % 5],
+      classroomData: classroom
+    }
+  })
 
   return (
     <div className="min-h-screen relative dashboard-container" style={{ minHeight: '100dvh' }}>
@@ -134,14 +173,6 @@ const Dashboard = () => {
                         <p>🌟 ¡Bienvenido! Comienza tu aventura matemática</p>
                       )}
                     </div>
-                  </div>
-                  <div className="ml-auto">
-                    <button
-                      onClick={handleLogout}
-                      className="text-white hover:text-red-300 transition-colors duration-200 text-sm bg-red-500 bg-opacity-50 px-3 py-1 rounded-lg"
-                    >
-                      Cerrar Sesión
-                    </button>
                   </div>
                 </div>
                 <ExperienceBar 

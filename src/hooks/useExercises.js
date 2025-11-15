@@ -18,6 +18,8 @@ export const useExercises = () => {
   // Cargar niveles de un tema específico
   const loadLevels = async (classroomId, courseId, topicNumber) => {
     try {
+      // Limpiar estado previo ANTES de cargar
+      setLevels([]);
       setIsLoading(true);
       setError(null);
       console.log('Cargando niveles para:', { classroomId, courseId, topicNumber });
@@ -25,12 +27,19 @@ export const useExercises = () => {
       const data = await studentGetLevels(classroomId, courseId, topicNumber);
       console.log('Niveles cargados:', data);
       
-      setLevels(data || []);
-      return { success: true, data };
+      // Solo actualizar si la petición fue exitosa
+      if (data && Array.isArray(data)) {
+        setLevels(data);
+        return { success: true, data };
+      } else {
+        setLevels([]);
+        return { success: false, error: 'No se encontraron niveles' };
+      }
     } catch (err) {
       console.error('Error cargando niveles:', err);
       const errorMessage = err.response?.data?.message || 'Error al cargar los niveles';
       setError(errorMessage);
+      setLevels([]);
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
@@ -40,6 +49,9 @@ export const useExercises = () => {
   // Cargar ejercicios de un nivel específico
   const loadExercises = async (classroomId, courseId, topicNumber, levelNumber) => {
     try {
+      // Limpiar estado previo ANTES de cargar
+      setExercises([]);
+      setCurrentExercise(null);
       setIsLoading(true);
       setError(null);
       console.log('Cargando ejercicios para:', { classroomId, courseId, topicNumber, levelNumber });
@@ -47,23 +59,27 @@ export const useExercises = () => {
       const data = await studentGetExercises(classroomId, courseId, topicNumber, levelNumber);
       console.log('Ejercicios cargados:', data);
       
-      setExercises(data || []);
-      setExerciseProgress(prev => ({
-        ...prev,
-        current: 0,
-        total: data?.length || 0,
-        answers: {}
-      }));
-      
-      if (data && data.length > 0) {
+      // Solo actualizar si la petición fue exitosa
+      if (data && Array.isArray(data) && data.length > 0) {
+        setExercises(data);
+        setExerciseProgress({
+          current: 0,
+          total: data.length,
+          answers: {}
+        });
         setCurrentExercise(data[0]);
+        return { success: true, data };
+      } else {
+        setExercises([]);
+        setCurrentExercise(null);
+        return { success: false, error: 'No se encontraron ejercicios' };
       }
-      
-      return { success: true, data };
     } catch (err) {
       console.error('Error cargando ejercicios:', err);
       const errorMessage = err.response?.data?.message || 'Error al cargar los ejercicios';
       setError(errorMessage);
+      setExercises([]);
+      setCurrentExercise(null);
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
