@@ -160,13 +160,13 @@ export const studentGetTopics = getTopics;
  *  Student flow (nuevos endpoints)
  * ========================= */
 
-// GET /classrooms/:classroomId/courses/:courseId/topics/:topicNumber/levels
-export const studentGetLevels = async (classroomId, courseId, topicNumber) => {
+// GET /classrooms/courses/topics/{topicId}/levels
+export const studentGetLevels = async (topicId) => {
   const { data } = await api.get(
-    `/classrooms/${classroomId}/courses/${courseId}/topics/${topicNumber}/levels`,
+    `/classrooms/courses/topics/${topicId}/levels`,
     { headers: authHeaders() }
   );
-  return data; // [{ levelNumber, name }]
+  return data;
 };
 
 // GET /student/classroom/course/topic/level/{levelId}/passedOrNot
@@ -193,7 +193,8 @@ export const studentGetLevelRunAttempts = async (levelRunId) => {
     `/student/classroom/course/topic/level/run/${levelRunId}/attempts`,
     { headers: authHeaders() }
   );
-  return data; // [{ exerciseNumber, attemptNumber, markedOption, isCorrect }]
+  // Retorna: [{ exerciseNumber, attemptNumber, markedOption, isCorrect }]
+  return data;
 };
 
 // GET /student/classroom/course/topic/level/run/{levelRunId}/result
@@ -202,7 +203,8 @@ export const studentGetLevelRunResult = async (levelRunId) => {
     `/student/classroom/course/topic/level/run/${levelRunId}/result`,
     { headers: authHeaders() }
   );
-  return data; // Resultados del nivel para este run específico
+  // Retorna: { totalCorrectFirstTry, minCorrectFirstTry, status }
+  return data;
 };
 
 // POST /student/classroom/course/topic/level/run/{levelRunId}/repeat
@@ -221,7 +223,8 @@ export const studentGetExercises = async (levelId) => {
     `/student/classroom/course/topic/level/${levelId}/exercises`,
     { headers: authHeaders() }
   );
-  return data; // [{ exerciseId, exerciseNumber, question, optionA, optionB, optionC, optionD, correctOption, ... }]
+  // Retorna: [{ exerciseId, exerciseNumber, question, optionA, optionB, optionC, optionD, optionE, correctOption }]
+  return data;
 };
 
 // POST /student/classroom/course/topic/level/run/{levelRunId}/exercise/{exerciseNumber}/answer

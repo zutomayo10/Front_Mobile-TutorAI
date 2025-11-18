@@ -13,16 +13,16 @@ const Levels = () => {
   const { levels, loadLevels, isLoading, error } = useExercises()
   
   // Obtener datos del estado de navegación
-  const { classroomId, courseId, topicNumber, topicName } = location.state || {}
+  const { classroomId, courseId, topicId, topicName } = location.state || {}
 
   useEffect(() => {
-    if (!classroomId || !courseId || topicNumber === undefined) {
+    if (!topicId) {
       navigate('/dashboard')
       return
     }
 
-    loadLevels(classroomId, courseId, topicNumber)
-  }, [classroomId, courseId, topicNumber])
+    loadLevels(classroomId, courseId, topicId)
+  }, [topicId])
 
   const handleSelectLevel = (level) => {
     if (!level.isAccessible) {
@@ -35,8 +35,9 @@ const Levels = () => {
       state: {
         classroomId,
         courseId,
-        topicNumber,
+        topicId,
         topicName,
+        levelId: level.levelId,
         levelNumber: level.levelNumber,
         levelName: level.name
       }
@@ -44,7 +45,12 @@ const Levels = () => {
   }
 
   const handleBack = () => {
-    navigate('/dashboard')
+    navigate('/topics', {
+      state: {
+        classroomId,
+        classroomName: topicName
+      }
+    })
   }
 
   if (isLoading) {

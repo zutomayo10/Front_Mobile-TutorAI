@@ -15,8 +15,9 @@ const Exercises = () => {
   const { 
     classroomId, 
     courseId, 
-    topicNumber, 
+    topicId,
     topicName,
+    levelId,
     levelNumber, 
     levelName 
   } = location.state || {}
@@ -85,12 +86,12 @@ const Exercises = () => {
   }, [])
 
   useEffect(() => {
-    if (!classroomId || !courseId || topicNumber === undefined || levelNumber === undefined) {
+    if (!levelId) {
       navigate('/dashboard')
       return
     }
-    loadExercises(classroomId, courseId, topicNumber, levelNumber)
-  }, [classroomId, courseId, topicNumber, levelNumber])
+    loadExercises(classroomId, courseId, topicId, levelId)
+  }, [levelId])
 
   // ⬇️ Recibe la letra
   const handleOptionSelect = (optionId, value) => {
@@ -101,92 +102,42 @@ const Exercises = () => {
   const handleSubmitAnswer = async () => {
     if (!selectedOption || !currentExercise) return
 
-    console.log('=== ENVIANDO RESPUESTA ===')
-    console.log('Ejercicio actual:', currentExercise)
-    console.log('correctOption del ejercicio:', currentExercise.correctOption)
-    console.log('Tipo de correctOption:', typeof currentExercise.correctOption)
-    console.log('Opción seleccionada:', selectedOption)
-    console.log('Valor enviado al backend:', selectedOption.value)
-    console.log('Tipo de valor enviado:', typeof selectedOption.value)
-    console.log('levelRunInfo:', levelRunInfo)
-
-    if (!levelRunInfo?.levelRunId) {
-      console.error('No se encontró levelRunId')
-      alert('Error: No se pudo identificar la sesión del nivel')
-      return
-    }
-
-    try {
-      const result = await markAnswer(
-        levelRunInfo.levelRunId,
-        currentExercise.exerciseNumber,
-        selectedOption.value   // ⬅️ enviamos la letra ("A", "B", "C"...)
-      )
-
-      console.log('=== RESPUESTA DEL BACKEND ===')
-      console.log('Backend registró la respuesta exitosamente')
-      console.log('result.status:', result.status)
-      console.log('result.data:', result.data)
-      
-      if (result.success) {
-        // VALIDACIÓN REAL: Comparar con correctOption del ejercicio
-        const correctOption = currentExercise.correctOption
-        const selectedValue = selectedOption.value
-        const isCorrect = selectedValue === correctOption
-        
-        console.log('=== VALIDACIÓN REAL ===')
-        console.log('Respuesta seleccionada:', selectedValue)
-        console.log('Respuesta correcta (del ejercicio):', correctOption)
-        console.log('Es correcta:', isCorrect)
-        console.log('Es correcta:', isCorrect)
-        
-        // Agregar la opción correcta real del ejercicio
-        const answerData = {
-          ...result.data,
-          isCorrect: isCorrect,
-          correctOption: correctOption, // La opción correcta real del ejercicio
-          detailedSolution: currentExercise.detailedSolution || 'Explicación no disponible'
-        }
-        console.log('answerData final:', answerData)
-        setAnswerResult(answerData)
-        
-        // Guardar respuesta del usuario
-        setUserAnswers(prev => [...prev, {
-          exerciseNumber: currentExercise.exerciseNumber,
-          question: currentExercise.question,
-          markedOption: selectedOption.value,
-          correctOption: correctOption,
-          isCorrect
-        }])
-        
-        setTimeout(() => {
-          setShowResult(true)
-        }, 1500)
-        
-        // Recargar historial de intentos para mostrar el nuevo intento
-        setTimeout(async () => {
-          await reloadAttemptHistory()
-        }, 2000)
-        
-        // Actualizar estadísticas del juego con XP real
-        completeExercise(isCorrect)
-        
-        // Calcular XP ganado
-        const xpGained = isCorrect ? 15 : 5
-        
-        // Mostrar feedback visual
-        if (isCorrect) {
-          console.log(`¡Respuesta correcta! +${xpGained} XP`)
-        } else {
-          console.log(`Respuesta incorrecta. +${xpGained} XP por intentar`)
-        }
-      } else {
-        alert('Error al enviar la respuesta: ' + result.error)
-      }
-    } catch (err) {
-      console.error('Error al enviar respuesta:', err)
-      alert('Error de conexión al enviar la respuesta')
-    }
+    // Validar localmente la respuesta sin llamar al backend
+    const correctOption = currentExercise.correctOption?.toUpperCase()?.trim()
+    const selectedValue = selectedOption.value?.toUpperCase()?.trim()
+    const isCorrect = selectedValue === correctOption
+    
+    // Guardar respuesta del usuario
+    setUserAnswers(prev => [...prev, {
+      exerciseNumber: currentExercise.exerciseNumber,
+      question: currentExercise.question,
+      markedOption: selectedOption.value,
+      correctOption: correctOption,
+      isCorrect
+    }])
+    
+    // Obtener el texto completo de la opción correcta
+    const optionKeys = ['optionA', 'optionB', 'optionC', 'optionD', 'optionE']
+    const optionLetters = ['A', 'B', 'C', 'D', 'E']
+    const correctOptionIndex = optionLetters.indexOf(correctOption)
+    const correctOptionText = correctOptionIndex >= 0 
+      ? currentExercise[optionKeys[correctOptionIndex]] 
+      : correctOption
+    
+    // Mostrar resultado
+    setAnswerResult({
+      isCorrect: isCorrect,
+      correctOption: correctOption,
+      correctOptionText: correctOptionText
+    })
+    
+    // Actualizar estadísticas del juego
+    completeExercise(isCorrect)
+    
+    // Mostrar modal de resultado
+    setTimeout(() => {
+      setShowResult(true)
+    }, 500)
   }
 
   const handleNextExercise = () => {
@@ -194,6 +145,11 @@ const Exercises = () => {
       // Completar el quiz
       setQuizCompleted(true)
     } else {
+      // Limpiar estados antes de avanzar
+      setSelectedOption(null)
+      setShowResult(false)
+      setAnswerResult(null)
+      
       const moved = nextExercise()
       if (!moved) {
         setQuizCompleted(true)
@@ -201,12 +157,30 @@ const Exercises = () => {
     }
   }
 
-  const handleFinishQuiz = () => {
+  const handleFinishQuiz = async () => {
     const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length
     const totalQuestions = exerciseProgress.total
     const scoreOver20 = Math.ceil((correctAnswers / totalQuestions) * 20)
     
-    completeLevel() // Completar el nivel
+    // Enviar todas las respuestas al backend
+    if (levelRunInfo?.levelRunId) {
+      try {
+        // Enviar cada respuesta al backend
+        for (const answer of userAnswers) {
+          await markAnswer(
+            levelRunInfo.levelRunId,
+            answer.exerciseNumber,
+            answer.markedOption
+          )
+        }
+        console.log('Todas las respuestas enviadas al backend exitosamente')
+      } catch (error) {
+        console.error('Error al enviar respuestas:', error)
+        // Continuar aunque haya error, no bloquear al usuario
+      }
+    }
+    
+    completeLevel() // Completar el nivel localmente
     
     navigate('/dashboard', {
       state: {
@@ -308,7 +282,7 @@ const Exercises = () => {
       state: {
         classroomId,
         courseId,
-        topicNumber,
+        topicId,
         topicName
       }
     })
@@ -503,15 +477,6 @@ const Exercises = () => {
             </div>
 
             <div className="space-y-3">
-              <button 
-                onClick={handleViewResults}
-                disabled={isLoading}
-                className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{backgroundColor: '#58A399'}}
-              >
-                {isLoading ? 'CARGANDO...' : 'VER RESULTADOS'}
-              </button>
-              
               <button 
                 onClick={handleFinishQuiz}
                 className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
@@ -772,18 +737,17 @@ const Exercises = () => {
                 : '¡Incorrecto!'}
             </h3>
             
-            {!answerResult.isCorrect && answerResult.correctOption && (
+            {!answerResult.isCorrect && (answerResult.correctOption || answerResult.correctOptionText) && (
               <div className="bg-white/20 rounded-lg p-4 mb-4">
                 <p className="text-white text-base mb-2">
-                  <span className="font-bold">Respuesta correcta:</span> {answerResult.correctOption}
+                  <span className="font-bold">Respuesta correcta: {answerResult.correctOption}</span>
                 </p>
+                {answerResult.correctOptionText && (
+                  <p className="text-white text-sm mt-1">
+                    {answerResult.correctOptionText}
+                  </p>
+                )}
               </div>
-            )}
-            
-            {answerResult.detailedSolution && (
-              <p className="text-white text-lg mb-6 leading-relaxed">
-                {answerResult.detailedSolution}
-              </p>
             )}
             
             <div className="flex space-x-4">

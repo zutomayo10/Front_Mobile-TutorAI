@@ -18,15 +18,15 @@ export const useExercises = () => {
   const [attemptHistory, setAttemptHistory] = useState([]); // Historial de intentos
 
   // Cargar niveles de un tema específico
-  const loadLevels = async (classroomId, courseId, topicNumber) => {
+  const loadLevels = async (classroomId, courseId, topicId) => {
     try {
       // Limpiar estado previo ANTES de cargar
       setLevels([]);
       setIsLoading(true);
       setError(null);
-      console.log('Cargando niveles para:', { classroomId, courseId, topicNumber });
+      console.log('Cargando niveles para topicId:', topicId);
       
-      const data = await studentGetLevels(classroomId, courseId, topicNumber);
+      const data = await studentGetLevels(topicId);
       console.log('Niveles cargados:', data);
       
       // Solo actualizar si la petición fue exitosa
@@ -35,8 +35,8 @@ export const useExercises = () => {
         const levelsWithProgress = await Promise.all(
           data.map(async (level) => {
             try {
-              // Asumir que cada level tiene un 'id' o usar levelNumber como fallback
-              const levelId = level.id || level.levelNumber;
+              // El backend devuelve levelId
+              const levelId = level.levelId || level.id || level.levelNumber;
               const hasPassed = await studentCheckLevelPassed(levelId);
               
               return {
@@ -91,7 +91,7 @@ export const useExercises = () => {
   };
 
   // Cargar ejercicios de un nivel específico
-  const loadExercises = async (classroomId, courseId, topicNumber, levelNumber) => {
+  const loadExercises = async (classroomId, courseId, topicId, levelId) => {
     try {
       // Limpiar estado previo ANTES de cargar
       setExercises([]);
@@ -100,20 +100,21 @@ export const useExercises = () => {
       setAttemptHistory([]);
       setIsLoading(true);
       setError(null);
-      console.log('Cargando ejercicios para:', { classroomId, courseId, topicNumber, levelNumber });
+      console.log('Cargando ejercicios para levelId:', levelId);
       
       // Primero, iniciar el level play para obtener runNumber y status
-      const levelId = levelNumber; // Asumiendo que levelId es el levelNumber
       const playInfo = await studentPlayLevel(levelId);
       console.log('Información del level run:', playInfo);
       setLevelRunInfo(playInfo);
       
       // Cargar historial de intentos para este run
+      let loadedAttempts = [];
       if (playInfo.levelRunId) {
         try {
           const attempts = await studentGetLevelRunAttempts(playInfo.levelRunId);
           console.log('Historial de intentos cargado:', attempts);
           setAttemptHistory(attempts);
+          loadedAttempts = attempts;
         } catch (attemptsErr) {
           console.warn('Error cargando historial de intentos:', attemptsErr);
           // No es crítico, continuar sin el historial
@@ -133,7 +134,7 @@ export const useExercises = () => {
           answers: {}
         });
         setCurrentExercise(data[0]);
-        return { success: true, data, levelRunInfo: playInfo, attemptHistory: attempts || [] };
+        return { success: true, data, levelRunInfo: playInfo, attemptHistory: loadedAttempts };
       } else {
         setExercises([]);
         setCurrentExercise(null);
@@ -170,7 +171,9 @@ export const useExercises = () => {
         markedOption
       );
       
-      console.log('Respuesta marcada:', result);
+      console.log('Respuesta marcada exitosamente:', result);
+      console.log('Status recibido:', result.status);
+      console.log('Data recibida:', result.data);
       
       // Actualizar el progreso local
       setExerciseProgress(prev => ({
@@ -187,12 +190,13 @@ export const useExercises = () => {
       
       return { 
         success: true, 
-        data: result.data,
+        data: result.data || {},
         status: result.status 
       };
     } catch (err) {
       console.error('Error marcando respuesta:', err);
-      const errorMessage = err.response?.data?.message || 'Error al marcar la respuesta';
+      console.error('Detalle del error:', err.response);
+      const errorMessage = err.response?.data?.message || err.message || 'Error al marcar la respuesta';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

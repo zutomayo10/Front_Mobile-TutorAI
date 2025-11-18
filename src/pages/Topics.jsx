@@ -31,13 +31,22 @@ const Topics = () => {
     }
   }, [selectedCourse, classroomId])
 
-  const handleSelectTopic = (topic) => {
+  const handleSelectTopic = (topic, index) => {
+    // Extraer topicId y nombre del topic
+    const topicId = topic.topicId || topic.id;
+    const topicName = topic.name || topic;
+    
+    if (!topicId) {
+      console.error('Topic sin ID:', topic);
+      return;
+    }
+    
     navigate('/levels', {
       state: {
         classroomId,
         courseId: selectedCourse.courseId,
-        topicNumber: topic.id?.topicNumber || topic.topicNumber,
-        topicName: topic.name
+        topicId: topicId,
+        topicName: topicName
       }
     })
   }
