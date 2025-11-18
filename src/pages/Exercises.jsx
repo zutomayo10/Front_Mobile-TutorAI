@@ -25,8 +25,13 @@ const Exercises = () => {
     exercises,
     currentExercise,
     exerciseProgress,
+    levelRunInfo,
+    attemptHistory,
     loadExercises,
     markAnswer,
+    reloadAttemptHistory,
+    getLevelResults, // Nueva función para obtener resultados
+    repeatLevel, // Nueva función para repetir nivel
     nextExercise,
     previousExercise,
     isLoading,
@@ -42,6 +47,8 @@ const Exercises = () => {
   const [answerResult, setAnswerResult] = useState(null)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [userAnswers, setUserAnswers] = useState([])
+  const [showLevelResults, setShowLevelResults] = useState(false) // Nuevo estado para mostrar resultados finales
+  const [levelResults, setLevelResults] = useState(null) // Datos de resultados del nivel
 
   // Efecto para verificar si el ejercicio actual ya fue respondido
   useEffect(() => {
@@ -101,40 +108,43 @@ const Exercises = () => {
     console.log('Opción seleccionada:', selectedOption)
     console.log('Valor enviado al backend:', selectedOption.value)
     console.log('Tipo de valor enviado:', typeof selectedOption.value)
+    console.log('levelRunInfo:', levelRunInfo)
+
+    if (!levelRunInfo?.levelRunId) {
+      console.error('No se encontró levelRunId')
+      alert('Error: No se pudo identificar la sesión del nivel')
+      return
+    }
 
     try {
       const result = await markAnswer(
-        classroomId,
-        courseId,
-        topicNumber,
-        levelNumber,
+        levelRunInfo.levelRunId,
         currentExercise.exerciseNumber,
         selectedOption.value   // ⬅️ enviamos la letra ("A", "B", "C"...)
       )
 
       console.log('=== RESPUESTA DEL BACKEND ===')
-      console.log('El backend solo registra la respuesta, no la valida')
+      console.log('Backend registró la respuesta exitosamente')
       console.log('result.status:', result.status)
       console.log('result.data:', result.data)
       
       if (result.success) {
-        // SOLUCIÓN: Simular validación aleatoria por ahora
-        // TODO: El backend debería implementar validación real
-        const responses = ['A', 'B', 'C', 'D', 'E']
-        const randomCorrect = responses[Math.floor(Math.random() * responses.length)]
-        const isCorrect = selectedOption.value === randomCorrect
+        // VALIDACIÓN REAL: Comparar con correctOption del ejercicio
+        const correctOption = currentExercise.correctOption
+        const selectedValue = selectedOption.value
+        const isCorrect = selectedValue === correctOption
         
-        console.log('=== VALIDACIÓN SIMULADA ===')
-        console.log('Respuesta seleccionada:', selectedOption.value)
-        console.log('Respuesta "correcta" simulada:', randomCorrect)
+        console.log('=== VALIDACIÓN REAL ===')
+        console.log('Respuesta seleccionada:', selectedValue)
+        console.log('Respuesta correcta (del ejercicio):', correctOption)
         console.log('Es correcta:', isCorrect)
-        console.log('NOTA: Esto es temporal hasta que el backend implemente validación')
+        console.log('Es correcta:', isCorrect)
         
-        // Agregar la opción correcta simulada
+        // Agregar la opción correcta real del ejercicio
         const answerData = {
           ...result.data,
           isCorrect: isCorrect,
-          correctOption: randomCorrect, // La opción "correcta" simulada
+          correctOption: correctOption, // La opción correcta real del ejercicio
           detailedSolution: currentExercise.detailedSolution || 'Explicación no disponible'
         }
         console.log('answerData final:', answerData)
@@ -145,13 +155,18 @@ const Exercises = () => {
           exerciseNumber: currentExercise.exerciseNumber,
           question: currentExercise.question,
           markedOption: selectedOption.value,
-          correctOption: randomCorrect,
+          correctOption: correctOption,
           isCorrect
         }])
         
         setTimeout(() => {
           setShowResult(true)
         }, 1500)
+        
+        // Recargar historial de intentos para mostrar el nuevo intento
+        setTimeout(async () => {
+          await reloadAttemptHistory()
+        }, 2000)
         
         // Actualizar estadísticas del juego con XP real
         completeExercise(isCorrect)
@@ -204,6 +219,81 @@ const Exercises = () => {
         }
       }
     })
+  }
+
+  const handleViewResults = async () => {
+    if (!levelRunInfo?.levelRunId) {
+      console.error('No hay levelRunId disponible para obtener resultados')
+      return
+    }
+
+    try {
+      console.log('Obteniendo resultados del nivel run:', levelRunInfo.levelRunId)
+      const result = await getLevelResults(levelRunInfo.levelRunId)
+      
+      if (result.success) {
+        setLevelResults(result.data)
+        setShowLevelResults(true)
+        console.log('Resultados del nivel cargados:', result.data)
+      } else {
+        console.error('Error obteniendo resultados:', result.error)
+        // Mostrar error al usuario si es necesario
+        showNotification({
+          type: 'error',
+          message: result.error || 'Error al cargar los resultados'
+        })
+      }
+    } catch (error) {
+      console.error('Error inesperado obteniendo resultados:', error)
+      showNotification({
+        type: 'error',
+        message: 'Error inesperado al cargar los resultados'
+      })
+    }
+  }
+
+  const handleRepeatLevel = async () => {
+    if (!levelRunInfo?.levelRunId) {
+      console.error('No hay levelRunId disponible para repetir el nivel')
+      return
+    }
+
+    try {
+      console.log('Repitiendo nivel run:', levelRunInfo.levelRunId)
+      const result = await repeatLevel(levelRunInfo.levelRunId)
+      
+      if (result.success) {
+        console.log('Nivel preparado para repetir:', result.data)
+        
+        // Cerrar modal de resultados y reiniciar el quiz
+        setShowLevelResults(false)
+        setQuizCompleted(false)
+        setUserAnswers([])
+        setSelectedOption(null)
+        setShowResult(false)
+        setAnswerResult(null)
+        
+        // Recargar los ejercicios con el nuevo run
+        await loadExercises(classroomId, courseId, topicNumber, levelNumber)
+        
+        showNotification({
+          type: 'success',
+          message: '¡Nivel reiniciado! Ahora puedes volver a intentarlo'
+        })
+      } else {
+        console.error('Error repitiendo nivel:', result.error)
+        showNotification({
+          type: 'error',
+          message: result.error || 'Error al repetir el nivel'
+        })
+      }
+    } catch (error) {
+      console.error('Error inesperado repitiendo nivel:', error)
+      showNotification({
+        type: 'error',
+        message: 'Error inesperado al repetir el nivel'
+      })
+    }
   }
 
   const handlePreviousExercise = () => {
@@ -299,6 +389,15 @@ const Exercises = () => {
 
   const isCorrectAnswer = (value) => {
     return answerResult?.isCorrect && selectedOption?.value === value
+  }
+
+  // Obtener intentos previos del ejercicio actual
+  const getCurrentExerciseAttempts = () => {
+    if (!currentExercise || !attemptHistory.length) return []
+    
+    return attemptHistory.filter(attempt => 
+      attempt.exerciseNumber === currentExercise.exerciseNumber
+    ).sort((a, b) => a.attemptNumber - b.attemptNumber)
   }
 
   const progress = exerciseProgress.total > 0 
@@ -403,13 +502,117 @@ const Exercises = () => {
               </div>
             </div>
 
-            <button 
-              onClick={handleFinishQuiz}
-              className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
-              style={{backgroundColor: '#F19506'}}
-            >
-              CONTINUAR
-            </button>
+            <div className="space-y-3">
+              <button 
+                onClick={handleViewResults}
+                disabled={isLoading}
+                className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{backgroundColor: '#58A399'}}
+              >
+                {isLoading ? 'CARGANDO...' : 'VER RESULTADOS'}
+              </button>
+              
+              <button 
+                onClick={handleFinishQuiz}
+                className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+                style={{backgroundColor: '#F19506'}}
+              >
+                CONTINUAR
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Pantalla de resultados detallados del nivel
+  if (showLevelResults && levelResults) {
+    return (
+      <div className="min-h-screen relative flex items-center justify-center" style={{ minHeight: '100dvh' }}>
+        <div 
+          className="fixed inset-0"
+          style={{
+            backgroundColor: '#1a472a',
+            backgroundImage: `url("/images/bosque.jpeg")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+
+        <div className="fixed inset-0 bg-black bg-opacity-60" />
+        
+        <div className="relative z-10 max-w-md w-full mx-4">
+          <div className="rounded-3xl p-6 shadow-2xl relative overflow-hidden" style={{backgroundColor: '#2d5016'}}>
+            
+            <div className="mb-4 flex items-center justify-between">
+              <h1 className="text-white text-2xl font-bold drop-shadow-lg">
+                Resultados del Nivel
+              </h1>
+              <button 
+                onClick={() => setShowLevelResults(false)}
+                className="text-white hover:text-gray-300 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 text-white">
+              {/* Aquí se mostrarán los datos del endpoint studentGetLevelRunResult */}
+              <div className="bg-black bg-opacity-30 rounded-2xl p-4">
+                <h3 className="text-lg font-semibold mb-2">Información General</h3>
+                <p>Run ID: {levelResults.levelRunId || 'N/A'}</p>
+                <p>Nivel: {levelResults.levelName || 'N/A'}</p>
+                <p>Estado: {levelResults.status || 'N/A'}</p>
+              </div>
+
+              {/* Estadísticas */}
+              {levelResults.statistics && (
+                <div className="bg-black bg-opacity-30 rounded-2xl p-4">
+                  <h3 className="text-lg font-semibold mb-2">Estadísticas</h3>
+                  <p>Puntuación Final: {levelResults.statistics.finalScore || 'N/A'}</p>
+                  <p>Respuestas Correctas: {levelResults.statistics.correctAnswers || 'N/A'}</p>
+                  <p>Total de Preguntas: {levelResults.statistics.totalQuestions || 'N/A'}</p>
+                  <p>Tiempo Total: {levelResults.statistics.totalTime || 'N/A'}</p>
+                </div>
+              )}
+
+              {/* Intentos */}
+              {levelResults.attempts && levelResults.attempts.length > 0 && (
+                <div className="bg-black bg-opacity-30 rounded-2xl p-4 max-h-48 overflow-y-auto">
+                  <h3 className="text-lg font-semibold mb-2">Historial de Intentos</h3>
+                  {levelResults.attempts.map((attempt, index) => (
+                    <div key={index} className="mb-2 p-2 bg-white bg-opacity-10 rounded-lg">
+                      <p className="text-sm">Ejercicio {attempt.exerciseNumber}: {attempt.markedOption}</p>
+                      <p className="text-xs text-gray-300">
+                        {attempt.isCorrect ? '✓ Correcto' : '✗ Incorrecto'} - 
+                        {new Date(attempt.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <button 
+                onClick={handleRepeatLevel}
+                disabled={isLoading}
+                className="w-full py-3 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{backgroundColor: '#58A399'}}
+              >
+                {isLoading ? 'PROCESANDO...' : 'REPETIR NIVEL'}
+              </button>
+              
+              <button 
+                onClick={() => setShowLevelResults(false)}
+                className="w-full py-3 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+                style={{backgroundColor: '#F19506'}}
+              >
+                CERRAR
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -441,6 +644,29 @@ const Exercises = () => {
                 {topicName || 'Ejercicios'} - {levelName || 'Nivel'}
               </h1>
               
+              {/* Información del run */}
+              {levelRunInfo && (
+                <div className="flex justify-center mb-4">
+                  <div className="bg-white/20 rounded-lg px-4 py-2 flex items-center space-x-4">
+                    <div className="text-white text-sm">
+                      <span className="font-semibold">Intento:</span> {levelRunInfo.runNumber}
+                    </div>
+                    <div className="text-white text-sm">
+                      <span className="font-semibold">Estado:</span> 
+                      <span className={`ml-1 px-2 py-1 rounded text-xs font-bold ${
+                        levelRunInfo.status === 'PASSED' ? 'bg-green-500' :
+                        levelRunInfo.status === 'FAILED' ? 'bg-red-500' :
+                        'bg-yellow-500'
+                      }`}>
+                        {levelRunInfo.status === 'IN_PROGRESS' ? 'EN PROGRESO' :
+                         levelRunInfo.status === 'PASSED' ? 'APROBADO' :
+                         levelRunInfo.status === 'FAILED' ? 'REPROBADO' : levelRunInfo.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="text-white text-center mb-4">
                 Ejercicio {exerciseProgress.current + 1} de {exerciseProgress.total}
               </div>
@@ -468,6 +694,30 @@ const Exercises = () => {
                 <p className="text-white text-lg leading-relaxed text-center">
                   {currentExercise.question}
                 </p>
+                
+                {/* Historial de intentos del ejercicio actual */}
+                {getCurrentExerciseAttempts().length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/30">
+                    <p className="text-white text-sm opacity-80 text-center mb-2">
+                      Intentos anteriores:
+                    </p>
+                    <div className="flex justify-center space-x-2">
+                      {getCurrentExerciseAttempts().map((attempt, index) => (
+                        <div 
+                          key={`${attempt.exerciseNumber}-${attempt.attemptNumber}`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                            attempt.isCorrect 
+                              ? 'bg-green-500' 
+                              : 'bg-red-500'
+                          }`}
+                          title={`Intento ${attempt.attemptNumber}: ${attempt.markedOption} - ${attempt.isCorrect ? 'Correcto' : 'Incorrecto'}`}
+                        >
+                          {attempt.markedOption}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 // src/hooks/useExercises.js
 import { useState, useEffect } from 'react';
-import { studentGetLevels, studentGetExercises, studentMarkOption } from '../services/api';
+import { studentGetLevels, studentGetExercises, studentMarkOption, studentCheckLevelPassed, studentPlayLevel, studentGetLevelRunAttempts, studentGetLevelRunResult, studentRepeatLevel } from '../services/api';
 
 export const useExercises = () => {
   const [levels, setLevels] = useState([]);
@@ -14,6 +14,8 @@ export const useExercises = () => {
     total: 0,
     answers: {}
   });
+  const [levelRunInfo, setLevelRunInfo] = useState(null); // Info del run actual
+  const [attemptHistory, setAttemptHistory] = useState([]); // Historial de intentos
 
   // Cargar niveles de un tema específico
   const loadLevels = async (classroomId, courseId, topicNumber) => {
@@ -29,8 +31,50 @@ export const useExercises = () => {
       
       // Solo actualizar si la petición fue exitosa
       if (data && Array.isArray(data)) {
-        setLevels(data);
-        return { success: true, data };
+        // Verificar cuáles niveles ha pasado el estudiante
+        const levelsWithProgress = await Promise.all(
+          data.map(async (level) => {
+            try {
+              // Asumir que cada level tiene un 'id' o usar levelNumber como fallback
+              const levelId = level.id || level.levelNumber;
+              const hasPassed = await studentCheckLevelPassed(levelId);
+              
+              return {
+                ...level,
+                hasPassed,
+                isAccessible: false // Se calculará después
+              };
+            } catch (err) {
+              console.error(`Error verificando nivel ${level.levelNumber}:`, err);
+              return {
+                ...level,
+                hasPassed: false,
+                isAccessible: false
+              };
+            }
+          })
+        );
+        
+        // Determinar qué niveles son accesibles
+        // El estudiante puede acceder hasta el primer nivel que no ha pasado
+        let foundFirstNotPassed = false;
+        const accessibleLevels = levelsWithProgress.map((level, index) => {
+          if (level.hasPassed) {
+            // Nivel ya pasado, siempre accesible
+            return { ...level, isAccessible: true };
+          } else if (!foundFirstNotPassed) {
+            // Primer nivel no pasado, es accesible
+            foundFirstNotPassed = true;
+            return { ...level, isAccessible: true };
+          } else {
+            // Niveles después del primer no pasado, no accesibles
+            return { ...level, isAccessible: false };
+          }
+        });
+        
+        console.log('Niveles con progreso:', accessibleLevels);
+        setLevels(accessibleLevels);
+        return { success: true, data: accessibleLevels };
       } else {
         setLevels([]);
         return { success: false, error: 'No se encontraron niveles' };
@@ -52,11 +96,32 @@ export const useExercises = () => {
       // Limpiar estado previo ANTES de cargar
       setExercises([]);
       setCurrentExercise(null);
+      setLevelRunInfo(null);
+      setAttemptHistory([]);
       setIsLoading(true);
       setError(null);
       console.log('Cargando ejercicios para:', { classroomId, courseId, topicNumber, levelNumber });
       
-      const data = await studentGetExercises(classroomId, courseId, topicNumber, levelNumber);
+      // Primero, iniciar el level play para obtener runNumber y status
+      const levelId = levelNumber; // Asumiendo que levelId es el levelNumber
+      const playInfo = await studentPlayLevel(levelId);
+      console.log('Información del level run:', playInfo);
+      setLevelRunInfo(playInfo);
+      
+      // Cargar historial de intentos para este run
+      if (playInfo.levelRunId) {
+        try {
+          const attempts = await studentGetLevelRunAttempts(playInfo.levelRunId);
+          console.log('Historial de intentos cargado:', attempts);
+          setAttemptHistory(attempts);
+        } catch (attemptsErr) {
+          console.warn('Error cargando historial de intentos:', attemptsErr);
+          // No es crítico, continuar sin el historial
+        }
+      }
+      
+      // Luego, cargar los ejercicios (ahora solo necesita levelId)
+      const data = await studentGetExercises(levelId);
       console.log('Ejercicios cargados:', data);
       
       // Solo actualizar si la petición fue exitosa
@@ -68,7 +133,7 @@ export const useExercises = () => {
           answers: {}
         });
         setCurrentExercise(data[0]);
-        return { success: true, data };
+        return { success: true, data, levelRunInfo: playInfo, attemptHistory: attempts || [] };
       } else {
         setExercises([]);
         setCurrentExercise(null);
@@ -80,6 +145,8 @@ export const useExercises = () => {
       setError(errorMessage);
       setExercises([]);
       setCurrentExercise(null);
+      setLevelRunInfo(null);
+      setAttemptHistory([]);
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
@@ -87,24 +154,18 @@ export const useExercises = () => {
   };
 
   // Marcar una opción para un ejercicio
-  const markAnswer = async (classroomId, courseId, topicNumber, levelNumber, exerciseNumber, markedOption) => {
+  const markAnswer = async (levelRunId, exerciseNumber, markedOption) => {
     try {
       setIsLoading(true);
       setError(null);
       console.log('Marcando respuesta:', { 
-        classroomId, 
-        courseId, 
-        topicNumber, 
-        levelNumber, 
+        levelRunId,
         exerciseNumber, 
         markedOption 
       });
       
       const result = await studentMarkOption(
-        classroomId, 
-        courseId, 
-        topicNumber, 
-        levelNumber, 
+        levelRunId,
         exerciseNumber, 
         markedOption
       );
@@ -132,6 +193,81 @@ export const useExercises = () => {
     } catch (err) {
       console.error('Error marcando respuesta:', err);
       const errorMessage = err.response?.data?.message || 'Error al marcar la respuesta';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Recargar historial de intentos
+  const reloadAttemptHistory = async () => {
+    if (levelRunInfo?.levelRunId) {
+      try {
+        const attempts = await studentGetLevelRunAttempts(levelRunInfo.levelRunId);
+        console.log('Historial de intentos actualizado:', attempts);
+        setAttemptHistory(attempts);
+        return attempts;
+      } catch (err) {
+        console.warn('Error recargando historial de intentos:', err);
+        return attemptHistory; // Devolver el historial actual si falla
+      }
+    }
+    return attemptHistory;
+  };
+
+  // Obtener resultados finales del nivel
+  const getLevelResults = async (levelRunId) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log('Obteniendo resultados del nivel run:', levelRunId);
+      
+      const result = await studentGetLevelRunResult(levelRunId);
+      console.log('Resultados del nivel:', result);
+      
+      return { 
+        success: true, 
+        data: result 
+      };
+    } catch (err) {
+      console.error('Error obteniendo resultados del nivel:', err);
+      const errorMessage = err.response?.data?.message || 'Error al obtener los resultados del nivel';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Repetir nivel completo
+  const repeatLevel = async (levelRunId) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log('Repitiendo nivel run:', levelRunId);
+      
+      const result = await studentRepeatLevel(levelRunId);
+      console.log('Nuevo run para repetir nivel:', result);
+      
+      // Limpiar estado actual para empezar de nuevo
+      setExercises([]);
+      setCurrentExercise(null);
+      setExerciseProgress({
+        current: 0,
+        total: 0,
+        answers: {}
+      });
+      setAttemptHistory([]);
+      setLevelRunInfo(result); // Actualizar con el nuevo run info
+      
+      return { 
+        success: true, 
+        data: result 
+      };
+    } catch (err) {
+      console.error('Error repitiendo nivel:', err);
+      const errorMessage = err.response?.data?.message || 'Error al repetir el nivel';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -192,6 +328,8 @@ export const useExercises = () => {
     currentExercise,
     selectedLevel,
     exerciseProgress,
+    levelRunInfo, // Info del level run actual
+    attemptHistory, // Historial de intentos del run
     isLoading,
     error,
     
@@ -200,6 +338,9 @@ export const useExercises = () => {
     loadExercises,
     markAnswer,
     setSelectedLevel,
+    reloadAttemptHistory, // Nueva función para recargar historial
+    getLevelResults, // Nueva función para obtener resultados finales
+    repeatLevel, // Nueva función para repetir nivel
     
     // Navegación
     nextExercise,

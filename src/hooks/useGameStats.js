@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useGameStats = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userInfo } = useAuth();
   
   // Estadísticas base para un usuario nuevo
   const [stats, setStats] = useState({
@@ -24,16 +24,27 @@ export const useGameStats = () => {
     totalStudyTime: 0 // en minutos
   });
 
+  // Función para obtener clave específica del usuario
+  const getStorageKey = () => {
+    if (userInfo?.id) {
+      return `gameStats_${userInfo.id}`;
+    }
+    return null;
+  };
+
   // Cargar estadísticas desde localStorage o API
   useEffect(() => {
-    if (isAuthenticated) {
-      const savedStats = localStorage.getItem('gameStats');
-      if (savedStats) {
-        try {
-          const parsedStats = JSON.parse(savedStats);
-          setStats(prev => ({ ...prev, ...parsedStats }));
-        } catch (error) {
-          console.error('Error cargando estadísticas guardadas:', error);
+    if (isAuthenticated && userInfo) {
+      const storageKey = getStorageKey();
+      if (storageKey) {
+        const savedStats = localStorage.getItem(storageKey);
+        if (savedStats) {
+          try {
+            const parsedStats = JSON.parse(savedStats);
+            setStats(prev => ({ ...prev, ...parsedStats }));
+          } catch (error) {
+            console.error('Error cargando estadísticas guardadas:', error);
+          }
         }
       }
     } else {
@@ -53,11 +64,37 @@ export const useGameStats = () => {
         totalStudyTime: 0
       });
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userInfo]);
+
+  // Función para resetear estadísticas a valores iniciales
+  const resetStats = () => {
+    const initialStats = {
+      level: 1,
+      experience: { current: 0, total: 100 },
+      exercisesCompleted: 0,
+      exercisesTotal: 0,
+      correctAnswers: 0,
+      totalAnswers: 0,
+      classroomsJoined: 0,
+      topicsUnlocked: 0,
+      levelsCompleted: 0,
+      achievements: [],
+      streakDays: 0,
+      totalStudyTime: 0
+    };
+    setStats(initialStats);
+    const storageKey = getStorageKey();
+    if (storageKey) {
+      localStorage.removeItem(storageKey); // Limpiar localStorage también
+    }
+  };
 
   // Guardar estadísticas en localStorage
   const saveStats = (newStats) => {
-    localStorage.setItem('gameStats', JSON.stringify(newStats));
+    const storageKey = getStorageKey();
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(newStats));
+    }
     setStats(newStats);
   };
 
@@ -174,25 +211,6 @@ export const useGameStats = () => {
       saveStats(newStats);
       return newStats;
     });
-  };
-
-  // Resetear estadísticas (para testing o nuevo usuario)
-  const resetStats = () => {
-    const freshStats = {
-      level: 1,
-      experience: { current: 0, total: 100 },
-      exercisesCompleted: 0,
-      exercisesTotal: 0,
-      correctAnswers: 0,
-      totalAnswers: 0,
-      classroomsJoined: 0,
-      topicsUnlocked: 0,
-      levelsCompleted: 0,
-      achievements: [],
-      streakDays: 0,
-      totalStudyTime: 0
-    };
-    saveStats(freshStats);
   };
 
   // Calcular estadísticas derivadas

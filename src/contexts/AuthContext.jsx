@@ -25,6 +25,22 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Función para limpiar todos los datos del usuario del localStorage
+  const clearUserLocalStorage = (userId) => {
+    if (userId) {
+      localStorage.removeItem(`gameStats_${userId}`);
+      localStorage.removeItem(`tutor-ai-profile-image_${userId}`);
+      localStorage.removeItem(`tutor-ai-uploaded-image_${userId}`);
+    }
+  };
+
+  // Función para limpiar claves antiguas (sin userId) que puedan estar causando conflictos
+  const clearLegacyLocalStorage = () => {
+    localStorage.removeItem('gameStats');
+    localStorage.removeItem('tutor-ai-profile-image');
+    localStorage.removeItem('tutor-ai-uploaded-image');
+  };
+
   // Cargar información del usuario autenticado
   const loadUserInfo = async () => {
     try {
@@ -39,6 +55,9 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar si hay un token válido al cargar la aplicación
   useEffect(() => {
+    // Limpiar claves antiguas que puedan causar conflictos
+    clearLegacyLocalStorage();
+    
     const token = getToken();
     if (token) {
       try {
@@ -162,6 +181,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Limpiar localStorage específico del usuario
+    clearUserLocalStorage(userInfo?.id);
+    
     apiLogout();
     setUser(null);
     setUserInfo(null);
@@ -176,7 +198,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    loadUserInfo
+    loadUserInfo,
+    clearUserLocalStorage
   };
 
   return (

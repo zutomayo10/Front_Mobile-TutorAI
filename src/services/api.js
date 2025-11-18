@@ -169,35 +169,69 @@ export const studentGetLevels = async (classroomId, courseId, topicNumber) => {
   return data; // [{ levelNumber, name }]
 };
 
-// GET /student/classroom/:classroomId/course/:courseId/topic/:topicNumber/level/:levelNumber/exercises
-export const studentGetExercises = async (
-  classroomId,
-  courseId,
-  topicNumber,
-  levelNumber
-) => {
+// GET /student/classroom/course/topic/level/{levelId}/passedOrNot
+export const studentCheckLevelPassed = async (levelId) => {
   const { data } = await api.get(
-    `/student/classroom/${classroomId}/course/${courseId}/topic/${topicNumber}/level/${levelNumber}/exercises`,
+    `/student/classroom/course/topic/level/${levelId}/passedOrNot`,
     { headers: authHeaders() }
   );
-  return data; // [{ exerciseNumber, question, optionA, optionB, ... }]
+  return data; // true | false
 };
 
-// POST /student/classroom/:classroomId/course/:courseId/topic/:topicNumber/level/:levelNumber/exercises/:exerciseNumber/answer
-export const studentMarkOption = async (
-  classroomId,
-  courseId,
-  topicNumber,
-  levelNumber,
-  exerciseNumber,
-  markedOption
-) => {
+// GET /student/classroom/course/topic/level/{levelId}/play
+export const studentPlayLevel = async (levelId) => {
+  const { data } = await api.get(
+    `/student/classroom/course/topic/level/${levelId}/play`,
+    { headers: authHeaders() }
+  );
+  return data; // { levelRunId, runNumber, status }
+};
+
+// GET /student/classroom/course/topic/level/run/{levelRunId}/attempts
+export const studentGetLevelRunAttempts = async (levelRunId) => {
+  const { data } = await api.get(
+    `/student/classroom/course/topic/level/run/${levelRunId}/attempts`,
+    { headers: authHeaders() }
+  );
+  return data; // [{ exerciseNumber, attemptNumber, markedOption, isCorrect }]
+};
+
+// GET /student/classroom/course/topic/level/run/{levelRunId}/result
+export const studentGetLevelRunResult = async (levelRunId) => {
+  const { data } = await api.get(
+    `/student/classroom/course/topic/level/run/${levelRunId}/result`,
+    { headers: authHeaders() }
+  );
+  return data; // Resultados del nivel para este run específico
+};
+
+// POST /student/classroom/course/topic/level/run/{levelRunId}/repeat
+export const studentRepeatLevel = async (levelRunId) => {
+  const { data } = await api.post(
+    `/student/classroom/course/topic/level/run/${levelRunId}/repeat`,
+    {},
+    { headers: authHeaders() }
+  );
+  return data; // Información del nuevo run para repetir el nivel
+};
+
+// GET /student/classroom/course/topic/level/{levelId}/exercises
+export const studentGetExercises = async (levelId) => {
+  const { data } = await api.get(
+    `/student/classroom/course/topic/level/${levelId}/exercises`,
+    { headers: authHeaders() }
+  );
+  return data; // [{ exerciseId, exerciseNumber, question, optionA, optionB, optionC, optionD, correctOption, ... }]
+};
+
+// POST /student/classroom/course/topic/level/run/{levelRunId}/exercise/{exerciseNumber}/answer
+export const studentMarkOption = async (levelRunId, exerciseNumber, markedOption) => {
   const { data, status } = await api.post(
-    `/student/classroom/${classroomId}/course/${courseId}/topic/${topicNumber}/level/${levelNumber}/exercises/${exerciseNumber}/answer`,
+    `/student/classroom/course/topic/level/run/${levelRunId}/exercise/${exerciseNumber}/answer`,
     { markedOption },
     { headers: authHeaders() }
   );
-  return { status, data };
+  return { status, data }; // status: 201, data: (vacío)
 };
 
 /** =========================
