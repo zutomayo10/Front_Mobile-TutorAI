@@ -3,83 +3,40 @@ import { useAuth } from '../contexts/AuthContext'
 
 export const useUserProfile = () => {
   const { userInfo } = useAuth()
-  const [profileImage, setProfileImage] = useState('🧙‍♂️')
-  const [uploadedImageUrl, setUploadedImageUrl] = useState(null)
+  const userId = userInfo?.id || userInfo?.userId || 'default'
+  const STORAGE_KEY = `tutor-ai-profile-image_${userId}`
+  
+  const [profileImage, setProfileImage] = useState(() => {
+    // Cargar inmediatamente del localStorage al inicializar
+    return localStorage.getItem(STORAGE_KEY) || '🧙‍♂️'
+  })
   const [userName] = useState('Juan Chavez')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Función para obtener claves específicas del usuario
-  const getStorageKeys = () => {
-    if (userInfo?.id) {
-      return {
-        profileImage: `tutor-ai-profile-image_${userInfo.id}`,
-        uploadedImage: `tutor-ai-uploaded-image_${userInfo.id}`
-      };
-    }
-    return null;
-  };
-
+  // Actualizar el profileImage cuando cambia el userId o se carga por primera vez
   useEffect(() => {
-    const loadProfileData = () => {
-      const keys = getStorageKeys();
-      if (keys) {
-        const savedProfileImage = localStorage.getItem(keys.profileImage)
-        const savedUploadedImage = localStorage.getItem(keys.uploadedImage)
-        
-        if (savedUploadedImage) {
-          setUploadedImageUrl(savedUploadedImage)
-          setProfileImage(null)
-        } else if (savedProfileImage) {
-          setProfileImage(savedProfileImage)
-          setUploadedImageUrl(null)
-        }
-      }
-      
-      setIsLoading(false)
+    const savedImage = localStorage.getItem(STORAGE_KEY)
+    if (savedImage) {
+      setProfileImage(savedImage)
     }
-
-    if (userInfo) {
-      const timeoutId = setTimeout(loadProfileData, 20)
-      return () => clearTimeout(timeoutId)
-    } else {
-      setIsLoading(false)
-    }
-  }, [userInfo])
+  }, [userId, STORAGE_KEY])
 
   const updateProfileImage = (emoji) => {
-    const keys = getStorageKeys();
-    if (keys) {
-      setProfileImage(emoji)
-      setUploadedImageUrl(null)
-      localStorage.setItem(keys.profileImage, emoji)
-      localStorage.removeItem(keys.uploadedImage)
-    }
-  }
-
-  const updateUploadedImage = (imageUrl) => {
-    const keys = getStorageKeys();
-    if (keys) {
-      setUploadedImageUrl(imageUrl)
-      setProfileImage(null)
-      localStorage.setItem(keys.uploadedImage, imageUrl)
-      localStorage.removeItem(keys.profileImage)
-    }
+    setProfileImage(emoji)
+    localStorage.setItem(STORAGE_KEY, emoji)
+    console.log('✅ Avatar guardado:', emoji, 'Key:', STORAGE_KEY)
   }
 
   const getCurrentAvatar = () => {
-    if (uploadedImageUrl) {
-      return { type: 'image', value: uploadedImageUrl }
-    }
     return { type: 'emoji', value: profileImage }
   }
 
   return {
     profileImage,
-    uploadedImageUrl,
+    uploadedImageUrl: null,
     userName,
     isLoading,
     updateProfileImage,
-    updateUploadedImage,
     getCurrentAvatar
   }
 }

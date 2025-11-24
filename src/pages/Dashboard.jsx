@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useClassroomData } from '../hooks/useClassroomData'
 import { useGameStats } from '../hooks/useGameStats'
 import { useAuth } from '../contexts/AuthContext'
+import { getCourses, getTopics, studentGetLevels, studentCheckLevelPassed } from '../services/api'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 import Avatar from '../components/Avatar'
@@ -14,11 +15,122 @@ import DashboardHeader from '../components/DashboardHeader'
 
 const Dashboard = () => {
   const { isMobile } = useDeviceDetection()
-  const { profileImage, uploadedImageUrl, isLoading: profileLoading } = useUserProfile()
+  const { profileImage, isLoading: profileLoading } = useUserProfile()
   const { classrooms, courses, topics, selectedClassroom, selectedCourse, isLoading: dataLoading } = useClassroomData()
   const { user, userInfo } = useAuth()
   const { stats, accuracy, progressPercentage, isNewUser } = useGameStats()
   const navigate = useNavigate()
+  const [levelsCompletedByClassroom, setLevelsCompletedByClassroom] = useState(() => {
+    // Cargar inmediatamente desde localStorage para mostrar datos al instante
+    try {
+      const cached = localStorage.getItem('classroomProgress');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        console.log('📦 [Dashboard] Cargado desde cache:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Error cargando cache:', error);
+    }
+    return {};
+  })
+
+  // Log para debugging de experiencia
+  useEffect(() => {
+    console.log('📊 [Dashboard] Stats actualizados:', {
+      level: stats.level,
+      currentExp: stats.experience.current,
+      totalExp: stats.experience.total,
+      levelsCompleted: stats.levelsCompleted,
+      exercisesCompleted: stats.exercisesCompleted
+    });
+  }, [stats]);
+
+  // Cargar niveles completados por cada classroom desde el backend
+  useEffect(() => {
+    const loadLevelsCompletedData = async () => {
+      if (!classrooms || classrooms.length === 0) return;
+      
+      console.log('🔄 [Dashboard] Actualizando niveles completados...');
+      const completedData = {};
+      
+      try {
+        // Procesar todos los classrooms en paralelo
+        await Promise.all(classrooms.map(async (classroom) => {
+          try {
+            let totalCompleted = 0;
+            
+            // Obtener cursos del classroom
+            const coursesData = await getCourses(classroom.id);
+            
+            if (coursesData && coursesData.length > 0) {
+              // Procesar todos los cursos en paralelo
+              const courseResults = await Promise.all(coursesData.map(async (course) => {
+                try {
+                  // Obtener topics del curso
+                  const topicsData = await getTopics(classroom.id, course.courseId);
+                  
+                  if (topicsData && topicsData.length > 0) {
+                    // Procesar todos los topics en paralelo
+                    const topicResults = await Promise.all(topicsData.map(async (topic) => {
+                      try {
+                        // Obtener niveles del topic
+                        const levels = await studentGetLevels(topic.topicId);
+                        
+                        if (levels && levels.length > 0) {
+                          // Verificar todos los niveles en paralelo
+                          const levelChecks = await Promise.all(levels.map(async (level) => {
+                            try {
+                              return await studentCheckLevelPassed(level.levelId);
+                            } catch {
+                              return false;
+                            }
+                          }));
+                          
+                          // Contar cuántos están completados
+                          return levelChecks.filter(passed => passed).length;
+                        }
+                        return 0;
+                      } catch {
+                        return 0;
+                      }
+                    }));
+                    
+                    return topicResults.reduce((sum, count) => sum + count, 0);
+                  }
+                  return 0;
+                } catch {
+                  return 0;
+                }
+              }));
+              
+              totalCompleted = courseResults.reduce((sum, count) => sum + count, 0);
+            }
+            
+            completedData[classroom.id] = totalCompleted;
+            console.log(`✅ Classroom ${classroom.name}: ${totalCompleted} niveles`);
+          } catch (error) {
+            console.error(`Error en classroom ${classroom.id}:`, error);
+            completedData[classroom.id] = 0;
+          }
+        }));
+        
+        // Guardar en localStorage para próxima carga
+        localStorage.setItem('classroomProgress', JSON.stringify(completedData));
+        setLevelsCompletedByClassroom(completedData);
+        console.log('💾 [Dashboard] Progreso guardado en cache');
+      } catch (error) {
+        console.error('Error general:', error);
+      }
+    };
+    
+    // Ejecutar la carga en background después de un pequeño delay
+    const timer = setTimeout(() => {
+      loadLevelsCompletedData();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [classrooms]);
 
   const handlePlayChallenge = (challenge) => {
     // Si el desafío tiene datos de aula real, navegar a los temas
@@ -40,18 +152,30 @@ const Dashboard = () => {
   }
 
   // Convertir aulas/cursos en desafíos para la interfaz existente
-  const challenges = classrooms.map((classroom, index) => {
-    // Calcular progreso real basado en ejercicios completados
-    const totalExercisesCompleted = stats.exercisesCompleted || 0
-    const totalLevelsCompleted = stats.levelsCompleted || 0
-    
-    // Si no hay progreso, mostrar 0 en todo
-    if (totalExercisesCompleted === 0) {
+  const challenges = useMemo(() => {
+    return classrooms.map((classroom, index) => {
+      const classroomId = classroom.id;
+      
+      // Obtener niveles completados para este classroom desde el backend
+      const completedLevelsInClassroom = levelsCompletedByClassroom[classroomId] || 0;
+      
+      // Total de misiones (topics) en este classroom - calculado dinámicamente
+      const totalMissions = 4; // Puedes ajustar esto si tienes la info real del backend
+      
+      // Calcular progreso basado en niveles completados
+      const progress = totalMissions > 0 ? Math.min(Math.round((completedLevelsInClassroom / totalMissions) * 100), 100) : 0;
+      
+      console.log(`🏫 [Dashboard] Classroom ${classroomId} - ${classroom.name}:`, {
+        completedLevels: completedLevelsInClassroom,
+        totalMissions,
+        progress
+      });
+      
       return {
         title: classroom.name || `Aula ${classroom.id}`,
-        completed: 0,
-        total: 4,
-        progress: 0,
+        completed: completedLevelsInClassroom,
+        total: totalMissions,
+        progress: progress,
         icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
         color: [
           'from-purple-500 to-pink-500',
@@ -69,70 +193,21 @@ const Dashboard = () => {
         ][index % 5],
         classroomData: classroom
       }
-    }
-    
-    // Calcular progreso por aula (distribución estimada)
-    const estimatedExercisesPerClassroom = 10
-    const startRange = estimatedExercisesPerClassroom * index
-    const endRange = estimatedExercisesPerClassroom * (index + 1)
-    const completedInThisClassroom = Math.max(0, Math.min(totalExercisesCompleted - startRange, estimatedExercisesPerClassroom))
-    const progressInClassroom = Math.min(Math.round((completedInThisClassroom / estimatedExercisesPerClassroom) * 100), 100)
-    
-    // Calcular misiones completadas basado en niveles reales completados
-    const totalMissions = 4
-    const levelsForThisClassroom = Math.floor(totalLevelsCompleted / classrooms.length) + (index < (totalLevelsCompleted % classrooms.length) ? 1 : 0)
-    const completedMissions = Math.min(levelsForThisClassroom, totalMissions)
-    
-    return {
-      title: classroom.name || `Aula ${classroom.id}`,
-      completed: completedMissions,
-      total: totalMissions,
-      progress: progressInClassroom,
-      icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
-      color: [
-        'from-purple-500 to-pink-500',
-        'from-orange-500 to-red-500', 
-        'from-blue-500 to-cyan-500',
-        'from-green-500 to-teal-500',
-        'from-yellow-500 to-orange-500'
-      ][index % 5],
-      shadowColor: [
-        'shadow-purple-500/30',
-        'shadow-orange-500/30',
-        'shadow-blue-500/30', 
-        'shadow-green-500/30',
-        'shadow-yellow-500/30'
-      ][index % 5],
-      classroomData: classroom
-    }
-  })
+    })
+  }, [classrooms, levelsCompletedByClassroom])
 
   return (
     <div className="min-h-screen relative dashboard-container" style={{ minHeight: '100dvh' }}>
       <div 
         className="fixed inset-0 fixed-background"
         style={{
-          backgroundColor: '#2d5016',
-          backgroundImage: `url("/images/bosque.jpeg")`,
+          backgroundImage: `url("/images/fondo_playa.jpg")`,
           backgroundAttachment: 'fixed',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat'
         }}
       />
-      
-      <div 
-        className="fixed inset-0 background-layer"
-        style={{
-          background: `
-            linear-gradient(135deg, rgba(45, 80, 22, 0.3) 0%, rgba(74, 124, 35, 0.2) 30%, rgba(61, 107, 26, 0.3) 60%, rgba(45, 80, 22, 0.4) 100%),
-            radial-gradient(ellipse at top, rgba(106, 170, 100, 0.2) 0%, transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(45, 80, 22, 0.3) 0%, transparent 50%)
-          `
-        }}
-      />
-      
-      <div className="fixed inset-0 bg-black bg-opacity-20 background-layer" />
 
       <div className="relative z-10 flex">
         {!isMobile && <Sidebar />}
@@ -140,18 +215,18 @@ const Dashboard = () => {
         <div className={`flex-1 ${isMobile ? 'pb-20 main-content-mobile' : 'pl-64'}`}>
           <div className="p-4 md:p-6">
             <div className="mb-6">
-              <div className={`${isMobile ? 'flex flex-col' : 'flex items-start'} mb-4`}>
+              <div className="relative">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <Avatar
                       profileImage={profileImage}
-                      uploadedImageUrl={uploadedImageUrl}
+                      uploadedImageUrl={null}
                       isLoading={profileLoading}
                       size={isMobile ? "sm" : "md"}
                       className="border-white border-opacity-50 shadow-lg"
                     />
                   </div>
-                  <div>
+                  <div className="flex-1 xl2:pr-80">
                     <h2 className="text-white font-bold text-xl drop-shadow-lg">
                       {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : 'Estudiante'}
                     </h2>

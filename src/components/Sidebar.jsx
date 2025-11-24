@@ -8,7 +8,7 @@ import UserInfo from './UserInfo'
 const Sidebar = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { profileImage, uploadedImageUrl, isLoading } = useUserProfile()
+  const { profileImage, isLoading } = useUserProfile()
   const { userInfo, logout } = useAuth()
   
   const navItems = [
@@ -34,7 +34,7 @@ const Sidebar = () => {
             <div className="mb-3 flex justify-center">
               <Avatar
                 profileImage={profileImage}
-                uploadedImageUrl={uploadedImageUrl}
+                uploadedImageUrl={null}
                 isLoading={isLoading}
                 size="md"
                 className="border-2 border-white shadow-lg"

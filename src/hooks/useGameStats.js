@@ -190,25 +190,52 @@ export const useGameStats = () => {
     });
   };
 
-  // Completar nivel
-  const completeLevel = () => {
+  // Completar nivel con información de medalla
+  const completeLevel = (medalType = null, correctFirstAttempts = 0, totalQuestions = 0) => {
+    console.log('🔴 [useGameStats] Iniciando completeLevel');
+    console.log('📋 [useGameStats] Parámetros:', { medalType, correctFirstAttempts, totalQuestions });
+    console.log('💾 [useGameStats] Stats actuales ANTES:', stats);
+    
     setStats(prevStats => {
       const newStats = { 
         ...prevStats,
         levelsCompleted: prevStats.levelsCompleted + 1
       };
 
-      // XP por completar nivel completo
-      newStats.experience.current += 100;
+      // Calcular XP según la medalla obtenida
+      let xpGained = 50; // XP base por completar nivel
+      
+      if (medalType === 'oro') {
+        xpGained = 150; // 3 estrellas
+      } else if (medalType === 'plata') {
+        xpGained = 100; // 2 estrellas
+      } else if (medalType === 'bronce') {
+        xpGained = 75; // 1 estrella
+      }
+      
+      // Bonus por respuestas correctas en primer intento
+      const bonusXP = correctFirstAttempts * 15;
+      xpGained += bonusXP;
+      
+      console.log(`🎮 [useGameStats] XP ganada: ${xpGained} (Base medalla: ${xpGained - bonusXP}, Bonus: ${bonusXP})`);
+      
+      newStats.experience.current += xpGained;
+      console.log(`📈 [useGameStats] XP nueva: ${newStats.experience.current}/${newStats.experience.total}`);
       
       // Verificar subida de nivel
+      let leveledUp = false;
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
         newStats.experience.total = Math.floor(newStats.experience.total * 1.2);
+        leveledUp = true;
+        console.log(`🎉 [useGameStats] ¡Subiste al nivel ${newStats.level}!`);
       }
 
+      console.log('💾 [useGameStats] Stats DESPUÉS:', newStats);
+      console.log('💾 [useGameStats] Guardando en localStorage...');
       saveStats(newStats);
+      console.log('✅ [useGameStats] Guardado completo');
       return newStats;
     });
   };

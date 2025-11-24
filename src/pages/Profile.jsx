@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useGameStats } from '../hooks/useGameStats'
+import { useUserStats } from '../hooks/useUserStats'
 import { useAuth } from '../contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
@@ -20,39 +21,26 @@ const Profile = () => {
   } = useUserProfile()
   const { userInfo, user, loadUserInfo } = useAuth()
   const { stats, accuracy, progressPercentage } = useGameStats()
+  const { stats: userStats, progressPercentage: backendProgress, averageStars, refreshStats } = useUserStats()
   
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
-  
   const [tempProfileImage, setTempProfileImage] = useState(null)
-  const [tempUploadedImageUrl, setTempUploadedImageUrl] = useState(null)
 
   const avatarOptions = [
     '🧙‍♂️', '🧙‍♀️', '👦', '👧', '🦸‍♂️', '🦸‍♀️', 
-    '🧑‍🎓', '👩‍🎓', '🤓', '😊', '🤗', '🥳',
-    '🦄', '🐉', '🦋', '🌟', '⚡', '🔥'
+    '👩‍🎓', '👨‍🎓', '🧕', '👩‍💻', '👨‍💻', '👩‍🔬',
+    '👨‍🔬', '👩‍🎨', '👨‍🎨', '👸', '🤴', '🧚‍♀️',
+    '🧚‍♂️', '🧜‍♀️', '🧜‍♂️', '👼', '🤓', '😊',
+    '🤗', '🥳', '🌸', '🦄', '🐉', '🦋', 
+    '🌟', '⚡', '🔥', '🌺', '🌈', '💫'
   ]
-
-  const handleImageChange = (event) => {
-    const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setTempUploadedImageUrl(e.target.result)
-        setTempProfileImage(null)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const handleAvatarSelect = (emoji) => {
     setTempProfileImage(emoji)
-    setTempUploadedImageUrl(null)
   }
 
   const handleSaveChanges = () => {
-    if (tempUploadedImageUrl) {
-      updateUploadedImage(tempUploadedImageUrl)
-    } else if (tempProfileImage) {
+    if (tempProfileImage) {
       updateProfileImage(tempProfileImage)
     }
     handleCloseModal()
@@ -60,21 +48,15 @@ const Profile = () => {
 
   const handleCloseModal = () => {
     setTempProfileImage(null)
-    setTempUploadedImageUrl(null)
     setIsImageModalOpen(false)
   }
 
-  const getPreviewAvatar = () => {
-    if (tempUploadedImageUrl) {
-      return { type: 'image', value: tempUploadedImageUrl }
+  const handleRefreshUserInfo = async () => {
+    try {
+      await loadUserInfo()
+    } catch (error) {
+      console.error('Error recargando información del usuario:', error)
     }
-    if (tempProfileImage) {
-      return { type: 'emoji', value: tempProfileImage }
-    }
-    if (uploadedImageUrl) {
-      return { type: 'image', value: uploadedImageUrl }
-    }
-    return { type: 'emoji', value: profileImage }
   }
 
   // Variables dinámicas basadas en estadísticas reales
@@ -109,21 +91,15 @@ const Profile = () => {
               <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#2ECC71'}}>
                 <div className="text-center">
                   <div className="relative inline-block mb-4">
-                    <Avatar
-                      profileImage={profileImage}
-                      uploadedImageUrl={uploadedImageUrl}
-                      isLoading={isLoading}
-                      size="xl"
-                      className="transform hover:scale-110 transition-all duration-300 cursor-pointer group"
-                      onClick={() => setIsImageModalOpen(true)}
-                    />
-                    
-                    {!isLoading && (
-                      <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center cursor-pointer"
-                           onClick={() => setIsImageModalOpen(true)}>
-                        <span className="text-white text-2xl">📷</span>
-                      </div>
-                    )}
+                    <div className="cursor-pointer" onClick={() => setIsImageModalOpen(true)}>
+                      <Avatar
+                        profileImage={profileImage}
+                        uploadedImageUrl={null}
+                        isLoading={isLoading}
+                        size="xl"
+                        className="transform hover:scale-110 transition-all duration-300"
+                      />
+                    </div>
                     
                     {!isLoading && (
                       <button
@@ -227,41 +203,45 @@ const Profile = () => {
 
             <div className="mb-6">
               <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
-                <h3 className="text-white text-xl font-bold mb-4 text-center flex items-center justify-center">
-                  <span className="mr-2 text-2xl">📊</span>
-                  <span>Tu Progreso Fantástico</span>
-                  <span className="ml-2 text-2xl">🚀</span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">📚</div>
-                    <div className="text-gray-700 font-bold text-lg">Ejercicios Completados</div>
-                    <div className="text-green-700 text-2xl font-bold">{stats.exercisesCompleted}</div>
-                  </div>
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">🎯</div>
-                    <div className="text-gray-700 font-bold text-lg">Precisión</div>
-                    <div className="text-green-700 text-2xl font-bold">
-                      {stats.totalAnswers > 0 ? `${accuracy}%` : 'N/A'}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">⭐</div>
-                    <div className="text-gray-700 font-bold text-lg">Niveles Completados</div>
-                    <div className="text-green-700 text-2xl font-bold">{stats.levelsCompleted}</div>
-                  </div>
-                  <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
-                    <div className="text-3xl mb-2">🏅</div>
-                    <div className="text-gray-700 font-bold text-lg">Logros Desbloqueados</div>
-                    <div className="text-green-700 text-2xl font-bold">{achievements}/{totalAchievements}</div>
-                    <div className="w-full bg-gray-300 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 rounded-full"
-                        style={{ width: `${(achievements / totalAchievements) * 100}%`, backgroundColor: '#3FD47E' }}
-                      ></div>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white text-xl font-bold flex items-center">
+                    <span className="mr-2 text-2xl">📊</span>
+                    <span>Tu Progreso Fantástico</span>
+                    <span className="ml-2 text-2xl">🚀</span>
+                  </h3>
+                  <button
+                    onClick={refreshStats}
+                    disabled={userStats.isLoading}
+                    className="text-white hover:text-yellow-300 transition-colors disabled:opacity-50"
+                    title="Actualizar estadísticas"
+                  >
+                    <span className={`text-xl ${userStats.isLoading ? 'animate-spin' : ''}`}>🔄</span>
+                  </button>
                 </div>
+                
+                {userStats.isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-white text-lg">Cargando estadísticas...</div>
+                    <div className="text-white/60 text-sm mt-2">⏳ Obteniendo datos del servidor</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                      <div className="text-3xl mb-2">⭐</div>
+                      <div className="text-gray-700 font-bold text-lg">Estrellas Ganadas</div>
+                      <div className="text-green-700 text-2xl font-bold">{userStats.totalStars}</div>
+                    </div>
+                    
+                    <div className="rounded-2xl p-4 text-center border border-white/30" style={{backgroundColor: '#CBF3DC'}}>
+                      <div className="text-3xl mb-2">🏫</div>
+                      <div className="text-gray-700 font-bold text-lg">Aulas Activas</div>
+                      <div className="text-green-700 text-2xl font-bold">{userStats.totalClassrooms}</div>
+                      <div className="text-gray-600 text-sm mt-1">
+                        {userStats.totalClassrooms === 1 ? 'aula' : 'aulas'} inscritas
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -276,7 +256,7 @@ const Profile = () => {
               <h3 className="text-white text-2xl font-bold mb-2">
                 🎨 ¡Cambia tu Avatar! 🎨
               </h3>
-              <p className="text-white/80">Elige un emoji divertido o sube tu propia foto</p>
+              <p className="text-white/80">Elige un emoji divertido para tu perfil</p>
             </div>
 
             <div className="mb-6">
@@ -324,46 +304,18 @@ const Profile = () => {
             </div>
 
             <div className="mb-6">
-              <h4 className="text-white font-semibold mb-3 text-center">📷 Tu Propia Foto</h4>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                  id="imageUpload"
-                />
-                <label
-                  htmlFor="imageUpload"
-                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-center space-x-2 border-2 border-white/30"
-                >
-                  <span className="text-xl">📸</span>
-                  <span>Subir Foto</span>
-                </label>
-              </div>
-              {tempUploadedImageUrl && (
-                <div className="mt-3 text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full overflow-hidden border-2 border-white/50">
-                    <img src={tempUploadedImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                  <p className="text-white/80 text-sm mt-2">¡Foto lista para guardar!</p>
-                </div>
-              )}
-            </div>
-
-            <div className="mb-6">
               <h4 className="text-white font-semibold mb-3 text-center">👀 Vista Previa</h4>
               <div className="flex justify-center">
                 <Avatar
                   profileImage={tempProfileImage || profileImage}
-                  uploadedImageUrl={tempUploadedImageUrl || (tempProfileImage ? null : uploadedImageUrl)}
+                  uploadedImageUrl={null}
                   isLoading={false}
                   size="lg"
                   showLoading={false}
                 />
               </div>
               <p className="text-center text-white/80 text-sm mt-2">
-                {tempProfileImage || tempUploadedImageUrl ? '¡Así se verá tu nuevo avatar!' : 'Tu avatar actual'}
+                {tempProfileImage ? '¡Así se verá tu nuevo avatar!' : 'Tu avatar actual'}
               </p>
             </div>
 
@@ -376,9 +328,9 @@ const Profile = () => {
               </button>
               <button
                 onClick={handleSaveChanges}
-                disabled={!tempProfileImage && !tempUploadedImageUrl}
+                disabled={!tempProfileImage}
                 className={`flex-1 font-bold py-3 px-6 rounded-xl transition-all duration-300 ${
-                  tempProfileImage || tempUploadedImageUrl
+                  tempProfileImage
                     ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 }`}

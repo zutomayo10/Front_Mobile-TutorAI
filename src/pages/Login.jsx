@@ -108,12 +108,7 @@ const Login = () => {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundColor: '#2d5016',
-          backgroundImage: `
-            url("/images/bosque.jpeg"),
-            linear-gradient(135deg, #2d5016 0%, #4a7c23 30%, #3d6b1a 60%, #2d5016 100%),
-            radial-gradient(ellipse at top, rgba(106, 170, 100, 0.3) 0%, transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(45, 80, 22, 0.4) 0%, transparent 50%)
-          `
+          backgroundImage: `url("/images/nuevo_fondo.jpg")`
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
@@ -129,7 +124,7 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-sm mx-4">
         <div className="text-center mb-8">
           <h1 className="text-white text-4xl font-bold leading-tight mb-4">
-            ¡Hola, Futuro<br />Genio!
+            ¡Hola Genio!
           </h1>
           <p className="text-white text-lg opacity-90 leading-relaxed px-2">
             {isLogin ? '¡Inicia sesión y continúa tu aventura en las matemáticas!' : '¡Regístrate y comienza tu aventura en el mundo de las matemáticas!'}

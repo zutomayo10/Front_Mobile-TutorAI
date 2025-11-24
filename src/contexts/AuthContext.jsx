@@ -30,15 +30,27 @@ export const AuthProvider = ({ children }) => {
     if (userId) {
       localStorage.removeItem(`gameStats_${userId}`);
       localStorage.removeItem(`tutor-ai-profile-image_${userId}`);
-      localStorage.removeItem(`tutor-ai-uploaded-image_${userId}`);
+      // Eliminado: tutor-ai-uploaded-image ya que no se usa más
     }
   };
 
   // Función para limpiar claves antiguas (sin userId) que puedan estar causando conflictos
   const clearLegacyLocalStorage = () => {
-    localStorage.removeItem('gameStats');
-    localStorage.removeItem('tutor-ai-profile-image');
+    // Solo limpiar gameStats sin userId (legacy)
+    const legacyGameStats = localStorage.getItem('gameStats');
+    if (legacyGameStats) {
+      localStorage.removeItem('gameStats');
+    }
+    
+    // Limpiar imágenes subidas (ya no se usan)
     localStorage.removeItem('tutor-ai-uploaded-image');
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('tutor-ai-uploaded-image')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // NO eliminar tutor-ai-profile-image ya que es el sistema actual de avatares
   };
 
   // Cargar información del usuario autenticado
@@ -55,25 +67,37 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar si hay un token válido al cargar la aplicación
   useEffect(() => {
-    // Limpiar claves antiguas que puedan causar conflictos
-    clearLegacyLocalStorage();
-    
-    const token = getToken();
-    if (token) {
-      try {
-        const role = getRoleBasedOnToken();
-        if (role) {
-          setUser({ role });
-          setIsAuthenticated(true);
-          // Cargar información del usuario
-          loadUserInfo();
+    const initAuth = async () => {
+      // Limpiar claves antiguas que puedan causar conflictos
+      clearLegacyLocalStorage();
+      
+      const token = getToken();
+      if (token) {
+        try {
+          const role = getRoleBasedOnToken();
+          if (role) {
+            // Intentar cargar información del usuario para validar el token
+            const info = await loadUserInfo();
+            
+            // Solo autenticar si se pudo cargar la info del usuario
+            if (info) {
+              setUser({ role });
+              setIsAuthenticated(true);
+            } else {
+              // Token inválido o expirado, limpiarlo
+              console.log('Token inválido o expirado, limpiando sesión...');
+              apiLogout();
+            }
+          }
+        } catch (error) {
+          console.error('Error al verificar token:', error);
+          apiLogout();
         }
-      } catch (error) {
-        console.error('Error al verificar token:', error);
-        apiLogout();
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    
+    initAuth();
   }, []);
 
   const login = async (credentials) => {

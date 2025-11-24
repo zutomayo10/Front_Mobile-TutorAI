@@ -11,9 +11,27 @@ const Levels = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { levels, loadLevels, isLoading, error } = useExercises()
+  const [showLockedModal, setShowLockedModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState(null)
   
   // Obtener datos del estado de navegación
-  const { classroomId, courseId, topicId, topicName } = location.state || {}
+  const { classroomId, courseId, topicId, topicName, forceReload, message, quizResults } = location.state || {}
+
+  // Función para obtener estrellas de un nivel desde localStorage
+  const getLevelStars = (levelId) => {
+    try {
+      const starsData = localStorage.getItem('level-stars')
+      if (starsData) {
+        const stars = JSON.parse(starsData)
+        return stars[levelId] || 0
+      }
+      return 0
+    } catch (error) {
+      console.error('Error al obtener estrellas:', error)
+      return 0
+    }
+  }
 
   useEffect(() => {
     if (!topicId) {
@@ -22,12 +40,25 @@ const Levels = () => {
     }
 
     loadLevels(classroomId, courseId, topicId)
-  }, [topicId])
+  }, [topicId, forceReload])
+
+  // Mostrar mensaje de éxito si viene de completar un nivel
+  useEffect(() => {
+    if (message && quizResults) {
+      setSuccessMessage({ message, quizResults })
+      setShowSuccessModal(true)
+      // Invalidar cache de progreso para que se recargue en Dashboard
+      localStorage.removeItem('classroomProgress')
+      console.log('🗑️ Cache de progreso invalidado - se recargará en Dashboard')
+      // Limpiar el state después de mostrarlo
+      window.history.replaceState({}, document.title)
+    }
+  }, [message, quizResults])
 
   const handleSelectLevel = (level) => {
     if (!level.isAccessible) {
-      // Mostrar mensaje de que el nivel está bloqueado
-      alert('Este nivel está bloqueado. Debes completar el nivel anterior primero.');
+      // Mostrar modal de nivel bloqueado
+      setShowLockedModal(true)
       return;
     }
     
@@ -48,7 +79,8 @@ const Levels = () => {
     navigate('/topics', {
       state: {
         classroomId,
-        classroomName: topicName
+        classroomName: topicName,
+        forceReload: Date.now() // Forzar recarga al volver
       }
     })
   }
@@ -67,7 +99,7 @@ const Levels = () => {
         className="fixed inset-0"
         style={{
           backgroundColor: '#2d5016',
-          backgroundImage: `url("/images/bosque.jpeg")`,
+          backgroundImage: `url("/images/fondo_playa.jpg")`,
           backgroundAttachment: 'fixed',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
@@ -123,61 +155,86 @@ const Levels = () => {
             {/* Levels Grid */}
             {levels.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {levels.map((level, index) => (
-                  <div
-                    key={level.levelNumber}
-                    onClick={() => handleSelectLevel(level)}
-                    className={`bg-white backdrop-blur-sm rounded-xl p-6 transform transition-all duration-200 border border-white border-opacity-20 ${
-                      level.isAccessible 
-                        ? 'bg-opacity-20 cursor-pointer hover:scale-105 hover:bg-opacity-30' 
-                        : 'bg-opacity-10 cursor-not-allowed grayscale opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ${
-                        level.isAccessible 
-                          ? level.hasPassed
+                {levels.map((level, index) => {
+                  const levelStars = getLevelStars(level.levelId);
+                  const isCompleted = level.hasPassed; // Ya no requiere estrellas, solo hasPassed del backend
+                  
+                  return (
+                    <div
+                      key={level.levelNumber}
+                      onClick={() => handleSelectLevel(level)}
+                      className={`backdrop-blur-sm rounded-xl p-6 transform transition-all duration-200 border ${
+                        isCompleted
+                          ? 'bg-green-700 bg-opacity-70 border-green-400 border-opacity-40 cursor-pointer hover:scale-105 hover:bg-opacity-80'
+                          : level.isAccessible 
+                            ? 'bg-white bg-opacity-20 border-white border-opacity-20 cursor-pointer hover:scale-105 hover:bg-opacity-30' 
+                            : 'bg-white bg-opacity-10 border-white border-opacity-20 cursor-not-allowed grayscale opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4 mb-4">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
+                          isCompleted
                             ? 'bg-gradient-to-br from-green-400 to-green-600'  // Verde para completado
-                            : 'bg-gradient-to-br from-yellow-400 to-orange-500' // Amarillo para disponible
-                          : 'bg-gradient-to-br from-gray-400 to-gray-600'       // Gris para bloqueado
-                      }`}>
-                        {level.hasPassed ? '✓' : level.levelNumber}
-                      </div>
-                      <div>
-                        <h3 className="text-white font-bold text-lg drop-shadow flex items-center space-x-2">
-                          <span>Nivel {level.levelNumber}</span>
-                          {!level.isAccessible && (
-                            <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            : level.isAccessible 
+                              ? 'bg-gradient-to-br from-yellow-400 to-orange-500' // Amarillo para disponible
+                              : 'bg-gradient-to-br from-gray-400 to-gray-600'       // Gris para bloqueado
+                        }`}>
+                          {isCompleted ? (
+                            <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
+                          ) : (
+                            level.levelNumber
                           )}
-                        </h3>
-                        <p className="text-white text-sm opacity-80">
-                          {level.name}
-                        </p>
-                        {level.hasPassed && (
-                          <p className="text-green-300 text-xs font-semibold">
-                            ✓ Completado
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-white font-bold text-lg drop-shadow flex items-center space-x-2">
+                            <span>Nivel {level.levelNumber}</span>
+                            {!level.isAccessible && (
+                              <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </h3>
+                          <p className="text-white text-sm opacity-90">
+                            {level.name}
                           </p>
-                        )}
+                          {isCompleted && (
+                            <div className="flex items-center space-x-1 mt-2">
+                              {[1, 2, 3].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-6 h-6 transition-all duration-300 ${
+                                    star <= levelStars
+                                      ? 'text-yellow-300 fill-current drop-shadow-[0_2px_8px_rgba(251,191,36,0.8)]'
+                                      : 'text-gray-400 fill-current opacity-30'
+                                  }`}
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                </svg>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="text-white text-sm font-medium opacity-90">
+                          {level.isAccessible 
+                            ? isCompleted 
+                              ? 'Repetir nivel'
+                              : 'Clic para iniciar'
+                            : 'Nivel bloqueado'
+                          }
+                        </div>
+                        <svg className={`w-6 h-6 text-white ${!level.isAccessible ? 'opacity-50' : 'opacity-90'}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
                       </div>
                     </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="text-white text-sm opacity-80">
-                        {level.isAccessible 
-                          ? level.hasPassed 
-                            ? 'Repetir nivel'
-                            : 'Clic para iniciar'
-                          : 'Nivel bloqueado'
-                        }
-                      </div>
-                      <svg className={`w-6 h-6 text-white ${!level.isAccessible ? 'opacity-50' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">
@@ -194,6 +251,83 @@ const Levels = () => {
       </div>
       
       {isMobile && <BottomNavigation />}
+      
+      {/* Modal de nivel bloqueado */}
+      {showLockedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-8 shadow-2xl border-4 border-red-300 text-center max-w-md w-full transform transition-all duration-500 scale-100 animate-bounce-in">
+            <div className="text-6xl mb-4 animate-shake">
+              🔒
+            </div>
+            <h3 className="text-white text-2xl md:text-3xl font-bold mb-4">
+              ¡Nivel Bloqueado!
+            </h3>
+            <p className="text-white text-lg mb-6 opacity-90">
+              Debes completar el nivel anterior para desbloquear este nivel.
+            </p>
+            <button 
+              className="w-full py-4 px-6 rounded-full text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+              style={{backgroundColor: '#F19506'}}
+              onClick={() => setShowLockedModal(false)}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de éxito al completar nivel */}
+      {showSuccessModal && successMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-8 shadow-2xl border-4 border-green-300 text-center max-w-md w-full transform transition-all duration-500 scale-100 animate-bounce-in">
+            <div className="text-6xl mb-4">
+              🎉
+            </div>
+            <h3 className="text-white text-2xl md:text-3xl font-bold mb-4">
+              ¡Nivel Completado!
+            </h3>
+            <div className="bg-white bg-opacity-20 rounded-xl p-4 mb-6">
+              <p className="text-white text-lg font-semibold mb-2">
+                {successMessage.message}
+              </p>
+              {successMessage.quizResults && (
+                <div className="space-y-2 text-white">
+                  {successMessage.quizResults.stars > 0 && (
+                    <div className="flex justify-center space-x-1">
+                      {[1, 2, 3].map((star) => (
+                        <svg
+                          key={star}
+                          className={`w-8 h-8 ${
+                            star <= successMessage.quizResults.stars
+                              ? 'text-yellow-300 fill-current drop-shadow-lg'
+                              : 'text-gray-400 fill-current opacity-30'
+                          }`}
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-sm">
+                    Respuestas correctas: {successMessage.quizResults.correctAnswers}/{successMessage.quizResults.totalQuestions}
+                  </p>
+                  <p className="text-sm font-bold text-yellow-300">
+                    +{successMessage.quizResults.experienceGained} XP ganada
+                  </p>
+                </div>
+              )}
+            </div>
+            <button 
+              className="w-full py-4 px-6 rounded-full text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+              style={{backgroundColor: '#F19506'}}
+              onClick={() => setShowSuccessModal(false)}
+            >
+              ¡Genial!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

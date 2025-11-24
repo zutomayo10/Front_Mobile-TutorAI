@@ -17,7 +17,9 @@ export const useClassroomData = () => {
       setIsLoading(true);
       setError(null);
       const data = await getClassrooms();
-      setClassrooms(data || []);
+      // Ordenar por ID para mantener un orden consistente
+      const sortedData = (data || []).sort((a, b) => a.id - b.id);
+      setClassrooms(sortedData);
     } catch (err) {
       console.error('Error cargando aulas:', err);
       setError('Error al cargar las aulas');

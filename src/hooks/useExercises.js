@@ -39,6 +39,12 @@ export const useExercises = () => {
               const levelId = level.levelId || level.id || level.levelNumber;
               const hasPassed = await studentCheckLevelPassed(levelId);
               
+              console.log(`🔍 Nivel ${level.levelNumber} (ID: ${levelId}):`, {
+                name: level.name,
+                hasPassed,
+                levelId
+              });
+              
               return {
                 ...level,
                 hasPassed,
@@ -103,8 +109,47 @@ export const useExercises = () => {
       console.log('Cargando ejercicios para levelId:', levelId);
       
       // Primero, iniciar el level play para obtener runNumber y status
-      const playInfo = await studentPlayLevel(levelId);
+      let playInfo = await studentPlayLevel(levelId);
       console.log('Información del level run:', playInfo);
+      console.log('🔍 Validación: levelId =', levelId, ', levelRunId =', playInfo.levelRunId);
+      console.log('📊 Estado del run:', playInfo.status);
+      
+      // Verificar si el run ya está finalizado y necesita repetirse
+      if (playInfo.status === 'PASSED' || playInfo.status === 'FAILED') {
+        console.warn('⚠️ Este nivel ya tiene un intento completado con status:', playInfo.status);
+        console.log('🔄 Intentando crear un nuevo LevelRun...');
+        
+        try {
+          // Intentar crear un nuevo run para poder enviar respuestas
+          await studentRepeatLevel(levelId);
+          console.log('✅ Nuevo LevelRun creado exitosamente');
+          
+          // Volver a cargar la información del level play para obtener el nuevo run
+          playInfo = await studentPlayLevel(levelId);
+          console.log('🆕 Nuevo run cargado:', playInfo);
+          console.log('📊 Nuevo estado del run:', playInfo.status);
+          
+          if (playInfo.status !== 'IN_PROGRESS') {
+            console.error('❌ El nuevo run no tiene status IN_PROGRESS:', playInfo.status);
+            throw new Error('El nuevo run no está en progreso');
+          }
+        } catch (repeatErr) {
+          console.error('❌ Error al crear nuevo LevelRun:', repeatErr);
+          console.error('Código de error:', repeatErr.response?.status);
+          console.error('Mensaje:', repeatErr.response?.data);
+          
+          // Si el error es 403, significa que no tiene permiso para repetir
+          // Dejar que continúe con el run actual (las respuestas no se enviarán al backend)
+          if (repeatErr.response?.status === 403) {
+            console.warn('⚠️ No tienes permiso para repetir este nivel automáticamente');
+            console.warn('💡 Usa el botón "Repetir Nivel" al finalizar si quieres intentarlo de nuevo');
+          } else {
+            // Para otros errores, propagar el error
+            throw new Error('No se pudo preparar el nivel para jugar: ' + (repeatErr.response?.data?.message || repeatErr.message));
+          }
+        }
+      }
+      
       setLevelRunInfo(playInfo);
       
       // Cargar historial de intentos para este run
@@ -124,6 +169,7 @@ export const useExercises = () => {
       // Luego, cargar los ejercicios (ahora solo necesita levelId)
       const data = await studentGetExercises(levelId);
       console.log('Ejercicios cargados:', data);
+      console.log('🔍 IDs de ejercicios:', data?.map(ex => ({ id: ex.exerciseId, num: ex.exerciseNumber })));
       
       // Solo actualizar si la petición fue exitosa
       if (data && Array.isArray(data) && data.length > 0) {
@@ -155,19 +201,19 @@ export const useExercises = () => {
   };
 
   // Marcar una opción para un ejercicio
-  const markAnswer = async (levelRunId, exerciseNumber, markedOption) => {
+  const markAnswer = async (levelRunId, exerciseId, markedOption) => {
     try {
-      setIsLoading(true);
+      // NO usar setIsLoading aquí - esto causa la pantalla de carga durante el quiz
       setError(null);
       console.log('Marcando respuesta:', { 
         levelRunId,
-        exerciseNumber, 
+        exerciseId, 
         markedOption 
       });
       
       const result = await studentMarkOption(
         levelRunId,
-        exerciseNumber, 
+        exerciseId, 
         markedOption
       );
       
@@ -175,18 +221,24 @@ export const useExercises = () => {
       console.log('Status recibido:', result.status);
       console.log('Data recibida:', result.data);
       
-      // Actualizar el progreso local
-      setExerciseProgress(prev => ({
-        ...prev,
-        answers: {
-          ...prev.answers,
-          [exerciseNumber]: {
-            markedOption,
-            isCorrect: result.data?.isCorrect,
-            timestamp: new Date().toISOString()
+      // Encontrar el exerciseNumber correspondiente al exerciseId para actualizar progreso local
+      const exercise = exercises.find(ex => ex.exerciseId === exerciseId);
+      const exerciseNumber = exercise?.exerciseNumber;
+      
+      if (exerciseNumber) {
+        // Actualizar el progreso local
+        setExerciseProgress(prev => ({
+          ...prev,
+          answers: {
+            ...prev.answers,
+            [exerciseNumber]: {
+              markedOption,
+              isCorrect: result.data?.isCorrect,
+              timestamp: new Date().toISOString()
+            }
           }
-        }
-      }));
+        }));
+      }
       
       return { 
         success: true, 
@@ -199,9 +251,8 @@ export const useExercises = () => {
       const errorMessage = err.response?.data?.message || err.message || 'Error al marcar la respuesta';
       setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
+    // NO hay finally con setIsLoading(false) - mantiene la UI fluida
   };
 
   // Recargar historial de intentos
@@ -245,13 +296,13 @@ export const useExercises = () => {
   };
 
   // Repetir nivel completo
-  const repeatLevel = async (levelRunId) => {
+  const repeatLevel = async (levelId) => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Repitiendo nivel run:', levelRunId);
+      console.log('Repitiendo nivel:', levelId);
       
-      const result = await studentRepeatLevel(levelRunId);
+      const result = await studentRepeatLevel(levelId);
       console.log('Nuevo run para repetir nivel:', result);
       
       // Limpiar estado actual para empezar de nuevo

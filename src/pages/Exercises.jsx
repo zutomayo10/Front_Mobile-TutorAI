@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useExercises } from '../hooks/useExercises'
 import { useGameStats } from '../hooks/useGameStats'
+import { studentGetLevelRunResult } from '../services/api'
 import ChestButton from '../components/ChestButton'
 
 const Exercises = () => {
@@ -50,28 +51,8 @@ const Exercises = () => {
   const [userAnswers, setUserAnswers] = useState([])
   const [showLevelResults, setShowLevelResults] = useState(false) // Nuevo estado para mostrar resultados finales
   const [levelResults, setLevelResults] = useState(null) // Datos de resultados del nivel
-
-  // Efecto para verificar si el ejercicio actual ya fue respondido
-  useEffect(() => {
-    if (currentExercise && exerciseProgress.answers) {
-      const exerciseAnswer = exerciseProgress.answers[currentExercise.exerciseNumber]
-      
-      if (exerciseAnswer) {
-        // Este ejercicio ya fue respondido, mostrar el estado bloqueado
-        setSelectedOption(exerciseAnswer.markedOption)
-        setShowResult(true)
-        setAnswerResult({
-          isCorrect: exerciseAnswer.isCorrect,
-          markedOption: exerciseAnswer.markedOption
-        })
-      } else {
-        // Ejercicio nuevo, resetear estado
-        setSelectedOption(null)
-        setShowResult(false)
-        setAnswerResult(null)
-      }
-    }
-  }, [currentExercise, exerciseProgress.answers])
+  const [firstAttemptResults, setFirstAttemptResults] = useState({}) // Rastrear si cada ejercicio fue correcto en el primer intento
+  const [exerciseAttempts, setExerciseAttempts] = useState({}) // Contar intentos por ejercicio
 
   // Estado para fondo aleatorio
   const [quizBackground, setQuizBackground] = useState('')
@@ -93,27 +74,45 @@ const Exercises = () => {
     loadExercises(classroomId, courseId, topicId, levelId)
   }, [levelId])
 
-  // ⬇️ Recibe la letra
-  const handleOptionSelect = (optionId, value) => {
+  // ⬇️ Recibe la letra y evalúa inmediatamente
+  const handleOptionSelect = async (optionId, value) => {
     if (showResult) return
-    setSelectedOption({ id: optionId, value })
-  }
+    
+    const selectedOpt = { id: optionId, value }
+    setSelectedOption(selectedOpt)
 
-  const handleSubmitAnswer = async () => {
-    if (!selectedOption || !currentExercise) return
-
-    // Validar localmente la respuesta sin llamar al backend
+    // Validar localmente la respuesta
     const correctOption = currentExercise.correctOption?.toUpperCase()?.trim()
-    const selectedValue = selectedOption.value?.toUpperCase()?.trim()
+    const selectedValue = value?.toUpperCase()?.trim()
     const isCorrect = selectedValue === correctOption
+    
+    const exerciseNum = currentExercise.exerciseNumber
+    
+    // Verificar si es el primer intento de este ejercicio
+    const isFirstAttempt = !exerciseAttempts[exerciseNum]
+    
+    // Rastrear intento
+    setExerciseAttempts(prev => ({
+      ...prev,
+      [exerciseNum]: (prev[exerciseNum] || 0) + 1
+    }))
+    
+    // Si es el primer intento, guardar si fue correcto
+    if (isFirstAttempt) {
+      setFirstAttemptResults(prev => ({
+        ...prev,
+        [exerciseNum]: isCorrect
+      }))
+    }
     
     // Guardar respuesta del usuario
     setUserAnswers(prev => [...prev, {
-      exerciseNumber: currentExercise.exerciseNumber,
+      exerciseNumber: exerciseNum,
       question: currentExercise.question,
-      markedOption: selectedOption.value,
+      markedOption: value,
       correctOption: correctOption,
-      isCorrect
+      isCorrect,
+      isFirstAttempt
     }])
     
     // Obtener el texto completo de la opción correcta
@@ -134,13 +133,44 @@ const Exercises = () => {
     // Actualizar estadísticas del juego
     completeExercise(isCorrect)
     
+    // Enviar respuesta al backend de forma asíncrona (sin bloquear la UI)
+    // Solo enviar si el levelRun está en progreso (IN_PROGRESS)
+    if (levelRunInfo?.levelRunId && 
+        levelRunInfo?.status === 'IN_PROGRESS' &&
+        isFirstAttempt && 
+        currentExercise?.exerciseId) {
+      // Solo enviar el primer intento de cada ejercicio
+      // Usar exerciseId (ID de BD) según requiere el backend
+      markAnswer(levelRunInfo.levelRunId, currentExercise.exerciseId, value).catch(err => {
+        console.error('Error enviando respuesta al backend:', err)
+        // Si falla porque el run ya finalizó, continuar sin bloquear
+        if (err.response?.status === 400) {
+          console.warn('⚠️ El LevelRun ya está finalizado, el backend rechazó la respuesta')
+          console.warn('💡 Las respuestas locales seguirán funcionando pero no se guardarán en el servidor')
+        }
+      })
+    } else if (levelRunInfo?.status !== 'IN_PROGRESS') {
+      console.warn('⚠️ LevelRun no está en progreso (status:', levelRunInfo?.status, '). Las respuestas no se enviarán al backend.')
+      console.warn('💡 Puedes completar el nivel localmente, pero usa "Repetir Nivel" para guardar en el servidor.')
+    }
+    
     // Mostrar modal de resultado
     setTimeout(() => {
       setShowResult(true)
-    }, 500)
+    }, 800)
   }
 
-  const handleNextExercise = () => {
+  const handleNextOrRetry = () => {
+    // Si la respuesta fue incorrecta, reintentar la misma pregunta
+    if (answerResult && !answerResult.isCorrect) {
+      setSelectedOption(null)
+      setShowResult(false)
+      setAnswerResult(null)
+      // No avanzar, quedarse en la misma pregunta
+      return
+    }
+    
+    // Si fue correcta, avanzar a la siguiente pregunta
     if (isLastExercise) {
       // Completar el quiz
       setQuizCompleted(true)
@@ -158,38 +188,98 @@ const Exercises = () => {
   }
 
   const handleFinishQuiz = async () => {
-    const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length
+    // Contar solo las respuestas correctas en el PRIMER intento
+    const correctFirstAttempts = Object.values(firstAttemptResults).filter(result => result === true).length
     const totalQuestions = exerciseProgress.total
-    const scoreOver20 = Math.ceil((correctAnswers / totalQuestions) * 20)
+    const scoreOver20 = Math.ceil((correctFirstAttempts / totalQuestions) * 20)
     
-    // Enviar todas las respuestas al backend
-    if (levelRunInfo?.levelRunId) {
+    console.log('📊 Finalizando quiz:', {
+      correctFirstAttempts,
+      totalQuestions,
+      scoreOver20
+    });
+    
+    // Calcular estrellas y tipo de medalla según la medalla obtenida
+    let stars = 0;
+    let medalType = 'ninguna';
+    
+    if (scoreOver20 >= 17) {
+      stars = 3;
+      medalType = 'oro';
+    } else if (scoreOver20 >= 14) {
+      stars = 2;
+      medalType = 'plata';
+    } else if (scoreOver20 >= 11) {
+      stars = 1;
+      medalType = 'bronce';
+    }
+    
+    console.log('🏅 Medalla calculada:', { stars, medalType });
+    
+    // Guardar estrellas en localStorage (solo si es mejor que el anterior)
+    if (levelId && stars > 0) {
       try {
-        // Enviar cada respuesta al backend
-        for (const answer of userAnswers) {
-          await markAnswer(
-            levelRunInfo.levelRunId,
-            answer.exerciseNumber,
-            answer.markedOption
-          )
+        const starsData = localStorage.getItem('level-stars')
+        const stars_obj = starsData ? JSON.parse(starsData) : {}
+        
+        // Solo actualizar si es más estrellas que antes
+        if (!stars_obj[levelId] || stars > stars_obj[levelId]) {
+          stars_obj[levelId] = stars
+          localStorage.setItem('level-stars', JSON.stringify(stars_obj))
+          console.log(`⭐ Guardadas ${stars} estrellas para nivel ${levelId}`)
         }
-        console.log('Todas las respuestas enviadas al backend exitosamente')
       } catch (error) {
-        console.error('Error al enviar respuestas:', error)
-        // Continuar aunque haya error, no bloquear al usuario
+        console.error('Error al guardar estrellas:', error)
       }
     }
     
-    completeLevel() // Completar el nivel localmente
+    // Nota: Las respuestas ya fueron enviadas al backend durante el quiz mediante markAnswer
+    // Ahora obtenemos el resultado del backend para que actualice el estado del LevelRun
+    let backendResult = null;
+    try {
+      if (levelRunInfo?.levelRunId) {
+        console.log('📊 Obteniendo resultado del nivel del backend...');
+        backendResult = await studentGetLevelRunResult(levelRunInfo.levelRunId);
+        console.log('✅ Resultado del backend:', backendResult);
+        
+        // Verificar si el backend marcó como PASSED
+        if (backendResult?.status === 'PASSED') {
+          console.log('🎉 Nivel PASADO según el backend');
+        } else if (backendResult?.status === 'FAILED') {
+          console.log('❌ Nivel FALLADO según el backend');
+        } else {
+          console.log('⚠️ Estado del nivel:', backendResult?.status);
+        }
+      }
+    } catch (error) {
+      console.error('Error obteniendo resultado del nivel:', error);
+    }
     
-    navigate('/dashboard', {
+    // Completar el nivel con información de medalla para calcular XP correctamente
+    console.log('🎮 Llamando completeLevel con:', { medalType, correctFirstAttempts, totalQuestions });
+    completeLevel(medalType, correctFirstAttempts, totalQuestions);
+    console.log('✅ completeLevel ejecutado');
+    
+    // Dar un pequeño delay para que el backend procese antes de navegar
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('⏳ Esperando a que el backend actualice...');
+    
+    // Navegar de vuelta a la vista de niveles con forceReload para que se actualicen
+    navigate('/levels', {
       state: {
+        classroomId,
+        courseId,
+        topicId,
+        topicName,
+        forceReload: Date.now(), // Forzar recarga para ver cambios
         message: `¡Nivel completado! Puntuación: ${scoreOver20}/20`,
         quizResults: {
           score: scoreOver20,
-          correctAnswers,
+          correctAnswers: correctFirstAttempts,
           totalQuestions,
-          experienceGained: correctAnswers * 15
+          stars,
+          medalType,
+          experienceGained: correctFirstAttempts * 15
         }
       }
     })
@@ -227,14 +317,14 @@ const Exercises = () => {
   }
 
   const handleRepeatLevel = async () => {
-    if (!levelRunInfo?.levelRunId) {
-      console.error('No hay levelRunId disponible para repetir el nivel')
+    if (!levelId) {
+      console.error('No hay levelId disponible para repetir el nivel')
       return
     }
 
     try {
-      console.log('Repitiendo nivel run:', levelRunInfo.levelRunId)
-      const result = await repeatLevel(levelRunInfo.levelRunId)
+      console.log('Repitiendo nivel:', levelId)
+      const result = await repeatLevel(levelId)
       
       if (result.success) {
         console.log('Nivel preparado para repetir:', result.data)
@@ -248,7 +338,7 @@ const Exercises = () => {
         setAnswerResult(null)
         
         // Recargar los ejercicios con el nuevo run
-        await loadExercises(classroomId, courseId, topicNumber, levelNumber)
+        await loadExercises(classroomId, courseId, topicId, levelId)
         
         showNotification({
           type: 'success',
@@ -283,7 +373,8 @@ const Exercises = () => {
         classroomId,
         courseId,
         topicId,
-        topicName
+        topicName,
+        forceReload: Date.now() // Forzar recarga de niveles
       }
     })
   }
@@ -350,17 +441,6 @@ const Exercises = () => {
 
   const exerciseOptions = getExerciseOptions()
 
-  // Funciones auxiliares para ChestButton
-  const getChestImage = (option) => {
-    if (!selectedOption) return '/images/cofre_cerrado.png'
-    if (selectedOption.id === option.id) {
-      return showResult && answerResult?.isCorrect 
-        ? '/images/cofre_abierto_correcto.png'
-        : '/images/cofre_abierto_incorrecto.png'
-    }
-    return '/images/cofre_cerrado.png'
-  }
-
   const isCorrectAnswer = (value) => {
     return answerResult?.isCorrect && selectedOption?.value === value
   }
@@ -380,9 +460,9 @@ const Exercises = () => {
 
   // Pantalla de quiz completado
   if (quizCompleted) {
-    const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length
+    const correctFirstAttempts = Object.values(firstAttemptResults).filter(result => result === true).length
     const totalQuestions = exerciseProgress.total
-    const scoreOver20 = Math.ceil((correctAnswers / totalQuestions) * 20)
+    const scoreOver20 = Math.ceil((correctFirstAttempts / totalQuestions) * 20)
     
     const getMedalInfo = (score) => {
       if (score >= 17 && score <= 20) {
@@ -417,7 +497,15 @@ const Exercises = () => {
     }
     
     const medalInfo = getMedalInfo(scoreOver20)
-    const experienceGained = correctAnswers * 15
+    
+    // Calcular XP ganada según medalla
+    let baseXP = 50;
+    if (medalInfo.type === 'oro') baseXP = 150;
+    else if (medalInfo.type === 'plata') baseXP = 100;
+    else if (medalInfo.type === 'bronce') baseXP = 75;
+    
+    const bonusXP = correctFirstAttempts * 15;
+    const totalXPGained = baseXP + bonusXP;
     
     return (
       <div className="min-h-screen relative flex items-center justify-center" style={{ minHeight: '100dvh' }}>
@@ -425,7 +513,7 @@ const Exercises = () => {
           className="fixed inset-0"
           style={{
             backgroundColor: '#1a472a',
-            backgroundImage: `url("/images/bosque.jpeg")`,
+            backgroundImage: `url("/images/fondo_playa.jpeg")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
@@ -442,7 +530,10 @@ const Exercises = () => {
                 ¡Felicidades!
               </h1>
               <p className="text-white text-lg font-medium">
-                Has ganado <span className="font-bold text-yellow-300">{experienceGained} puntos de EX</span>
+                Has ganado <span className="font-bold text-yellow-300">{totalXPGained} puntos de XP</span>
+              </p>
+              <p className="text-white text-sm opacity-80 mt-1">
+                (Medalla {medalInfo.type}: {baseXP} XP + Bonus: {bonusXP} XP)
               </p>
             </div>
 
@@ -464,15 +555,47 @@ const Exercises = () => {
 
             <div className="mb-6">
               <p className="text-white text-lg font-semibold mb-2">
-                Completaste {correctAnswers}/{totalQuestions}
+                Correctas en primer intento: {correctFirstAttempts}/{totalQuestions}
               </p>
               <div className="text-center">
                 <p className="text-white text-lg font-medium mb-1">
                   TU PUNTAJE FUE:
                 </p>
-                <div className={`text-6xl font-bold ${medalInfo.color} drop-shadow-2xl`}>
+                <div className={`text-6xl font-bold ${medalInfo.color} drop-shadow-2xl mb-4`}>
                   {scoreOver20}
                 </div>
+                
+                {/* Mostrar estrellas ganadas */}
+                {(() => {
+                  let stars = 0;
+                  if (scoreOver20 >= 17) stars = 3;
+                  else if (scoreOver20 >= 14) stars = 2;
+                  else if (scoreOver20 >= 11) stars = 1;
+                  
+                  return stars > 0 && (
+                    <div className="flex justify-center items-center space-x-2 mb-2">
+                      {[1, 2, 3].map((star) => (
+                        <svg
+                          key={star}
+                          className={`w-8 h-8 transition-all duration-300 ${
+                            star <= stars
+                              ? 'text-yellow-400 fill-current drop-shadow-lg animate-pulse'
+                              : 'text-gray-600 fill-current opacity-30'
+                          }`}
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                      ))}
+                    </div>
+                  );
+                })()}
+                
+                {scoreOver20 >= 11 && (
+                  <p className="text-yellow-300 text-sm font-semibold animate-bounce">
+                    ¡{scoreOver20 >= 17 ? '3' : scoreOver20 >= 14 ? '2' : '1'} Estrella{scoreOver20 >= 14 ? 's' : ''} ganada{scoreOver20 >= 14 ? 's' : ''}!
+                  </p>
+                )}
               </div>
             </div>
 
@@ -499,7 +622,7 @@ const Exercises = () => {
           className="fixed inset-0"
           style={{
             backgroundColor: '#1a472a',
-            backgroundImage: `url("/images/bosque.jpeg")`,
+            backgroundImage: `url("/images/fondo_playa.jpeg")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
@@ -609,29 +732,6 @@ const Exercises = () => {
                 {topicName || 'Ejercicios'} - {levelName || 'Nivel'}
               </h1>
               
-              {/* Información del run */}
-              {levelRunInfo && (
-                <div className="flex justify-center mb-4">
-                  <div className="bg-white/20 rounded-lg px-4 py-2 flex items-center space-x-4">
-                    <div className="text-white text-sm">
-                      <span className="font-semibold">Intento:</span> {levelRunInfo.runNumber}
-                    </div>
-                    <div className="text-white text-sm">
-                      <span className="font-semibold">Estado:</span> 
-                      <span className={`ml-1 px-2 py-1 rounded text-xs font-bold ${
-                        levelRunInfo.status === 'PASSED' ? 'bg-green-500' :
-                        levelRunInfo.status === 'FAILED' ? 'bg-red-500' :
-                        'bg-yellow-500'
-                      }`}>
-                        {levelRunInfo.status === 'IN_PROGRESS' ? 'EN PROGRESO' :
-                         levelRunInfo.status === 'PASSED' ? 'APROBADO' :
-                         levelRunInfo.status === 'FAILED' ? 'REPROBADO' : levelRunInfo.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               <div className="text-white text-center mb-4">
                 Ejercicio {exerciseProgress.current + 1} de {exerciseProgress.total}
               </div>
@@ -659,30 +759,6 @@ const Exercises = () => {
                 <p className="text-white text-lg leading-relaxed text-center">
                   {currentExercise.question}
                 </p>
-                
-                {/* Historial de intentos del ejercicio actual */}
-                {getCurrentExerciseAttempts().length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/30">
-                    <p className="text-white text-sm opacity-80 text-center mb-2">
-                      Intentos anteriores:
-                    </p>
-                    <div className="flex justify-center space-x-2">
-                      {getCurrentExerciseAttempts().map((attempt, index) => (
-                        <div 
-                          key={`${attempt.exerciseNumber}-${attempt.attemptNumber}`}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                            attempt.isCorrect 
-                              ? 'bg-green-500' 
-                              : 'bg-red-500'
-                          }`}
-                          title={`Intento ${attempt.attemptNumber}: ${attempt.markedOption} - ${attempt.isCorrect ? 'Correcto' : 'Incorrecto'}`}
-                        >
-                          {attempt.markedOption}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -695,25 +771,14 @@ const Exercises = () => {
                     option={option}
                     selectedAnswer={selectedOption}
                     onSelect={handleOptionSelect}
-                    getChestImage={getChestImage}
                     isCorrectAnswer={isCorrectAnswer}
+                    showResult={showResult}
                     isMobile={isMobile}
-                    chestSize={{ mobile: 240, desktop: 240 }}
+                    chestSize={{ mobile: 200, desktop: 240 }}
                     fontSize={{ mobile: 40, desktop: 60 }}
                   />
                 ))}
               </div>
-              
-              {/* Botón de confirmar */}
-              {selectedOption && !showResult && (
-                <button
-                  onClick={handleSubmitAnswer}
-                  className="py-4 px-12 rounded-2xl text-white font-bold text-xl shadow-2xl transition-all duration-300 hover:opacity-90 transform hover:scale-105 animate-bounce"
-                  style={{backgroundColor: '#F19506'}}
-                >
-                  CONFIRMAR RESPUESTA
-                </button>
-              )}
             </div>
 
           </div>
@@ -737,34 +802,15 @@ const Exercises = () => {
                 : '¡Incorrecto!'}
             </h3>
             
-            {!answerResult.isCorrect && (answerResult.correctOption || answerResult.correctOptionText) && (
-              <div className="bg-white/20 rounded-lg p-4 mb-4">
-                <p className="text-white text-base mb-2">
-                  <span className="font-bold">Respuesta correcta: {answerResult.correctOption}</span>
-                </p>
-                {answerResult.correctOptionText && (
-                  <p className="text-white text-sm mt-1">
-                    {answerResult.correctOptionText}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            <div className="flex space-x-4">
-              {!isFirstExercise && (
-                <button 
-                  className="flex-1 py-4 px-6 rounded-full bg-gray-500 hover:bg-gray-600 text-white font-bold text-lg shadow-xl transition-all duration-300"
-                  onClick={handlePreviousExercise}
-                >
-                  ← Anterior
-                </button>
-              )}
+            <div className="flex justify-center">
               <button 
-                className="flex-1 py-4 px-6 rounded-full text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
+                className="w-full max-w-xs py-4 px-6 rounded-full text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
                 style={{backgroundColor: '#F19506'}}
-                onClick={handleNextExercise}
+                onClick={handleNextOrRetry}
               >
-                {isLastExercise ? 'Finalizar' : 'Siguiente →'}
+                {answerResult.isCorrect 
+                  ? (isLastExercise ? 'Finalizar' : 'Siguiente →')
+                  : '🔄 Reintentar'}
               </button>
             </div>
           </div>
@@ -776,3 +822,4 @@ const Exercises = () => {
 }
 
 export default Exercises
+

@@ -13,7 +13,7 @@ const Topics = () => {
   const { courses, topics, loadCourses, loadTopics, isLoading, error } = useClassroomData()
   
   // Obtener datos del estado de navegación
-  const { classroomId, classroomName } = location.state || {}
+  const { classroomId, classroomName, forceReload } = location.state || {}
   const [selectedCourse, setSelectedCourse] = useState(null)
 
   useEffect(() => {
@@ -23,7 +23,7 @@ const Topics = () => {
     }
 
     loadCourses(classroomId)
-  }, [classroomId])
+  }, [classroomId, forceReload])
 
   useEffect(() => {
     if (selectedCourse) {
@@ -46,7 +46,8 @@ const Topics = () => {
         classroomId,
         courseId: selectedCourse.courseId,
         topicId: topicId,
-        topicName: topicName
+        topicName: topicName,
+        forceReload: Date.now() // Forzar recarga de niveles
       }
     })
   }
@@ -69,7 +70,7 @@ const Topics = () => {
         className="fixed inset-0"
         style={{
           backgroundColor: '#2d5016',
-          backgroundImage: `url("/images/bosque.jpeg")`,
+          backgroundImage: `url("/images/fondo_playa.jpg")`,
           backgroundAttachment: 'fixed',
           backgroundSize: 'cover',
           backgroundPosition: 'center center',

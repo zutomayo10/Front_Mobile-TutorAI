@@ -288,7 +288,7 @@ const Question = () => {
           className="fixed inset-0"
           style={{
             backgroundColor: '#1a472a',
-            backgroundImage: `url("/images/bosque.jpeg")`,
+            backgroundImage: `url("/images/fondo_playa.jpg")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

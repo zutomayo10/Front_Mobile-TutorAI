@@ -207,10 +207,10 @@ export const studentGetLevelRunResult = async (levelRunId) => {
   return data;
 };
 
-// POST /student/classroom/course/topic/level/run/{levelRunId}/repeat
-export const studentRepeatLevel = async (levelRunId) => {
+// POST /student/classroom/course/topic/level/{levelId}/repeat
+export const studentRepeatLevel = async (levelId) => {
   const { data } = await api.post(
-    `/student/classroom/course/topic/level/run/${levelRunId}/repeat`,
+    `/student/classroom/course/topic/level/${levelId}/repeat`,
     {},
     { headers: authHeaders() }
   );
@@ -227,14 +227,31 @@ export const studentGetExercises = async (levelId) => {
   return data;
 };
 
-// POST /student/classroom/course/topic/level/run/{levelRunId}/exercise/{exerciseNumber}/answer
-export const studentMarkOption = async (levelRunId, exerciseNumber, markedOption) => {
-  const { data, status } = await api.post(
-    `/student/classroom/course/topic/level/run/${levelRunId}/exercise/${exerciseNumber}/answer`,
-    { markedOption },
-    { headers: authHeaders() }
-  );
-  return { status, data }; // status: 201, data: (vacío)
+// POST /student/classroom/course/topic/level/run/{levelRunId}/exercise/{exerciseId}/answer
+// El backend valida que el exerciseId pertenezca al mismo level del levelRun
+export const studentMarkOption = async (levelRunId, exerciseId, markedOption) => {
+  const url = `/student/classroom/course/topic/level/run/${levelRunId}/exercise/${exerciseId}/answer`;
+  console.log('🎯 Enviando POST a:', url);
+  console.log('📊 Parámetros:', { levelRunId, exerciseId, markedOption });
+  
+  try {
+    const { data, status } = await api.post(
+      url,
+      { markedOption },
+      { headers: authHeaders() }
+    );
+    console.log('✅ Respuesta exitosa:', { status, data });
+    return { status, data };
+  } catch (error) {
+    console.error('❌ Error en studentMarkOption:', {
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    throw error;
+  }
 };
 
 /** =========================

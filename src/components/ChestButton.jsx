@@ -4,22 +4,16 @@ const ChestButton = ({
   option, 
   selectedAnswer, 
   onSelect, 
-  getChestImage, 
-  isCorrectAnswer, 
+  isCorrectAnswer,
+  showResult,
   isMobile,
-  chestSize = { mobile: 200, desktop: 320 },
+  chestSize = { mobile: 200, desktop: 240 },
   fontSize = { mobile: 36, desktop: 60 }
 }) => {
   
-  const getChestStyle = () => {
-    if (!selectedAnswer) return {}
-    
-    if (selectedAnswer.id === option.id) {
-      return { transform: 'scale(1.1)' }
-    }
-    
-    return { opacity: 0.6 }
-  }
+  const isSelected = selectedAnswer?.id === option.id
+  const isCorrect = showResult && isCorrectAnswer(option.value)
+  const isIncorrect = showResult && isSelected && !isCorrectAnswer(option.value)
 
   const containerStyle = {
     width: `${isMobile ? chestSize.mobile : chestSize.desktop}px`,
@@ -28,13 +22,12 @@ const ChestButton = ({
 
   const textStyle = {
     fontSize: `${isMobile ? fontSize.mobile : fontSize.desktop}px`,
-    textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
   }
 
   return (
     <div
       className="relative flex flex-col items-center"
-      style={getChestStyle()}
+      style={{ opacity: selectedAnswer && !isSelected ? 0.5 : 1 }}
     >
       {/* Texto de la opción ENCIMA del cofre */}
       {option.text && (
@@ -49,37 +42,54 @@ const ChestButton = ({
       
       <div 
         onClick={() => !selectedAnswer && onSelect(option.id, option.value)}
-        className="relative flex items-center justify-center cursor-pointer transform transition-all duration-300 hover:scale-110"
+        className={`relative flex items-center justify-center cursor-pointer transform transition-all duration-300 rounded-2xl ${
+          !selectedAnswer ? 'hover:scale-110' : ''
+        } ${isSelected ? 'scale-110' : ''} shadow-2xl overflow-hidden`}
         style={containerStyle}
       >
+        {/* Imagen de fondo del cofre */}
         <img 
-          src={getChestImage(option)}
+          src="/images/cofre_cerrado.png"
           alt=""
-          className="w-full h-full object-contain drop-shadow-2xl transition-all duration-500 select-none"
+          className="absolute inset-0 w-full h-full object-cover"
           draggable="false"
         />
         
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        {/* Overlay de color según estado */}
+        {isCorrect && (
+          <div className="absolute inset-0 bg-green-500 opacity-40"></div>
+        )}
+        {isIncorrect && (
+          <div className="absolute inset-0 bg-red-500 opacity-40"></div>
+        )}
+        
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
           <span 
-            className="font-bold text-white drop-shadow-2xl transition-all duration-300"
+            className="font-bold text-white drop-shadow-2xl"
             style={textStyle}
           >
             {option.value}
           </span>
         </div>
         
-        {selectedAnswer?.id === option.id && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {isCorrectAnswer(option.value) ? (
-              <div className="absolute inset-0 animate-pulse">
-                <div className="absolute inset-0 bg-green-400 opacity-20 rounded-full"></div>
-              </div>
-            ) : (
-              <div className="absolute inset-0 animate-pulse">
-                <div className="absolute inset-0 bg-red-400 opacity-20 rounded-full"></div>
-              </div>
-            )}
+        {/* Iconos de correcto/incorrecto */}
+        {isCorrect && (
+          <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-400 rounded-full flex items-center justify-center shadow-lg animate-bounce z-20">
+            <span className="text-4xl">✔️</span>
           </div>
+        )}
+        
+        {isIncorrect && (
+          <div className="absolute -top-4 -right-4 w-16 h-16 bg-red-400 rounded-full flex items-center justify-center shadow-lg animate-bounce z-20">
+            <span className="text-4xl">❌</span>
+          </div>
+        )}
+        
+        {/* Efecto de selección */}
+        {isSelected && !showResult && (
+          <div className="absolute inset-0 rounded-2xl animate-pulse" style={{
+            boxShadow: '0 0 30px 10px rgba(255, 255, 0, 0.6)'
+          }}></div>
         )}
       </div>
     </div>

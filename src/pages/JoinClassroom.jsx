@@ -45,7 +45,7 @@ const JoinClassroom = () => {
         style={{
           backgroundColor: '#2d5016',
           backgroundImage: `
-            url("/images/bosque.jpeg"),
+            url("/images/fondo_playa.jpg"),
             linear-gradient(135deg, #2d5016 0%, #4a7c23 30%, #3d6b1a 60%, #2d5016 100%),
             radial-gradient(ellipse at top, rgba(106, 170, 100, 0.3) 0%, transparent 50%),
             radial-gradient(ellipse at bottom, rgba(45, 80, 22, 0.4) 0%, transparent 50%)
