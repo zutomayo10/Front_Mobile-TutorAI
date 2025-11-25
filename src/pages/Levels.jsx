@@ -49,7 +49,8 @@ const Levels = () => {
       setShowSuccessModal(true)
       // Invalidar cache de progreso para que se recargue en Dashboard
       localStorage.removeItem('classroomProgress')
-      console.log('🗑️ Cache de progreso invalidado - se recargará en Dashboard')
+      localStorage.removeItem('classroomTotals')
+      console.log('🗑️ Cache de progreso y totales invalidado - se recargará en Dashboard')
       // Limpiar el state después de mostrarlo
       window.history.replaceState({}, document.title)
     }

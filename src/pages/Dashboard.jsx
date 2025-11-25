@@ -34,6 +34,21 @@ const Dashboard = () => {
     }
     return {};
   })
+  
+  const [totalLevelsByClassroom, setTotalLevelsByClassroom] = useState(() => {
+    // Cargar totales desde cache
+    try {
+      const cached = localStorage.getItem('classroomTotals');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        console.log('📦 [Dashboard] Totales cargados desde cache:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Error cargando cache de totales:', error);
+    }
+    return {};
+  })
 
   // Log para debugging de experiencia
   useEffect(() => {
@@ -46,19 +61,21 @@ const Dashboard = () => {
     });
   }, [stats]);
 
-  // Cargar niveles completados por cada classroom desde el backend
+  // Cargar niveles completados y totales por cada classroom desde el backend
   useEffect(() => {
-    const loadLevelsCompletedData = async () => {
+    const loadLevelsData = async () => {
       if (!classrooms || classrooms.length === 0) return;
       
-      console.log('🔄 [Dashboard] Actualizando niveles completados...');
+      console.log('🔄 [Dashboard] Actualizando niveles completados y totales...');
       const completedData = {};
+      const totalsData = {};
       
       try {
         // Procesar todos los classrooms en paralelo
         await Promise.all(classrooms.map(async (classroom) => {
           try {
             let totalCompleted = 0;
+            let totalLevels = 0;
             
             // Obtener cursos del classroom
             const coursesData = await getCourses(classroom.id);
@@ -78,6 +95,8 @@ const Dashboard = () => {
                         const levels = await studentGetLevels(topic.topicId);
                         
                         if (levels && levels.length > 0) {
+                          const totalInTopic = levels.length;
+                          
                           // Verificar todos los niveles en paralelo
                           const levelChecks = await Promise.all(levels.map(async (level) => {
                             try {
@@ -88,37 +107,47 @@ const Dashboard = () => {
                           }));
                           
                           // Contar cuántos están completados
-                          return levelChecks.filter(passed => passed).length;
+                          const completedInTopic = levelChecks.filter(passed => passed).length;
+                          
+                          return { completed: completedInTopic, total: totalInTopic };
                         }
-                        return 0;
+                        return { completed: 0, total: 0 };
                       } catch {
-                        return 0;
+                        return { completed: 0, total: 0 };
                       }
                     }));
                     
-                    return topicResults.reduce((sum, count) => sum + count, 0);
+                    return {
+                      completed: topicResults.reduce((sum, item) => sum + item.completed, 0),
+                      total: topicResults.reduce((sum, item) => sum + item.total, 0)
+                    };
                   }
-                  return 0;
+                  return { completed: 0, total: 0 };
                 } catch {
-                  return 0;
+                  return { completed: 0, total: 0 };
                 }
               }));
               
-              totalCompleted = courseResults.reduce((sum, count) => sum + count, 0);
+              totalCompleted = courseResults.reduce((sum, item) => sum + item.completed, 0);
+              totalLevels = courseResults.reduce((sum, item) => sum + item.total, 0);
             }
             
             completedData[classroom.id] = totalCompleted;
-            console.log(`✅ Classroom ${classroom.name}: ${totalCompleted} niveles`);
+            totalsData[classroom.id] = totalLevels;
+            console.log(`✅ Classroom ${classroom.name}: ${totalCompleted}/${totalLevels} niveles`);
           } catch (error) {
             console.error(`Error en classroom ${classroom.id}:`, error);
             completedData[classroom.id] = 0;
+            totalsData[classroom.id] = 0;
           }
         }));
         
         // Guardar en localStorage para próxima carga
         localStorage.setItem('classroomProgress', JSON.stringify(completedData));
+        localStorage.setItem('classroomTotals', JSON.stringify(totalsData));
         setLevelsCompletedByClassroom(completedData);
-        console.log('💾 [Dashboard] Progreso guardado en cache');
+        setTotalLevelsByClassroom(totalsData);
+        console.log('💾 [Dashboard] Progreso y totales guardados en cache');
       } catch (error) {
         console.error('Error general:', error);
       }
@@ -126,7 +155,7 @@ const Dashboard = () => {
     
     // Ejecutar la carga en background después de un pequeño delay
     const timer = setTimeout(() => {
-      loadLevelsCompletedData();
+      loadLevelsData();
     }, 100);
     
     return () => clearTimeout(timer);
@@ -156,25 +185,25 @@ const Dashboard = () => {
     return classrooms.map((classroom, index) => {
       const classroomId = classroom.id;
       
-      // Obtener niveles completados para este classroom desde el backend
+      // Obtener niveles completados y totales para este classroom desde el backend
       const completedLevelsInClassroom = levelsCompletedByClassroom[classroomId] || 0;
+      const totalLevelsInClassroom = totalLevelsByClassroom[classroomId] || 0;
       
-      // Total de misiones (topics) en este classroom - calculado dinámicamente
-      const totalMissions = 4; // Puedes ajustar esto si tienes la info real del backend
-      
-      // Calcular progreso basado en niveles completados
-      const progress = totalMissions > 0 ? Math.min(Math.round((completedLevelsInClassroom / totalMissions) * 100), 100) : 0;
+      // Calcular progreso basado en niveles completados vs total real
+      const progress = totalLevelsInClassroom > 0 
+        ? Math.min(Math.round((completedLevelsInClassroom / totalLevelsInClassroom) * 100), 100) 
+        : 0;
       
       console.log(`🏫 [Dashboard] Classroom ${classroomId} - ${classroom.name}:`, {
         completedLevels: completedLevelsInClassroom,
-        totalMissions,
+        totalLevels: totalLevelsInClassroom,
         progress
       });
       
       return {
         title: classroom.name || `Aula ${classroom.id}`,
         completed: completedLevelsInClassroom,
-        total: totalMissions,
+        total: totalLevelsInClassroom,
         progress: progress,
         icon: ['🧮', '🍕', '📐', '📚', '🎯'][index % 5],
         color: [
@@ -194,7 +223,7 @@ const Dashboard = () => {
         classroomData: classroom
       }
     })
-  }, [classrooms, levelsCompletedByClassroom])
+  }, [classrooms, levelsCompletedByClassroom, totalLevelsByClassroom])
 
   return (
     <div className="min-h-screen relative dashboard-container" style={{ minHeight: '100dvh' }}>
