@@ -1,8 +1,19 @@
 import React from 'react';
 
-const ExperienceBar = ({ currentExp, totalExp, isMobile }) => {
-  // Calcular porcentaje
-  const percentage = Math.round((currentExp / totalExp) * 100);
+const ExperienceBar = ({ currentExp = 0, totalExp = 100, isMobile }) => {
+  // Validar valores y calcular porcentaje
+  const validCurrentExp = currentExp || 0;
+  const validTotalExp = totalExp || 100;
+  const percentage = validTotalExp > 0 ? Math.round((validCurrentExp / validTotalExp) * 100) : 0;
+  
+  // Log para debugging
+  console.log('📊 [ExperienceBar] Props recibidos:', { 
+    currentExp, 
+    totalExp, 
+    validCurrentExp, 
+    validTotalExp, 
+    percentage 
+  });
 
   return (
     <>
@@ -23,7 +34,7 @@ const ExperienceBar = ({ currentExp, totalExp, isMobile }) => {
               </div>
             </div>
             <div className="rounded-full px-2 py-0.5 border border-white/30 flex-shrink-0" style={{backgroundColor: '#F19506'}}>
-              <span className="text-white text-xs font-bold whitespace-nowrap">{currentExp}/{totalExp}</span>
+              <span className="text-white text-xs font-bold whitespace-nowrap">{validCurrentExp}/{validTotalExp}</span>
             </div>
           </div>
         </div>
@@ -46,7 +57,7 @@ const ExperienceBar = ({ currentExp, totalExp, isMobile }) => {
               </div>
             </div>
             <div className="rounded-full px-4 py-1 border border-white/30" style={{backgroundColor: '#F19506'}}>
-              <span className="text-white text-sm font-bold">{currentExp}/{totalExp} EXP</span>
+              <span className="text-white text-sm font-bold">{validCurrentExp}/{validTotalExp} EXP</span>
             </div>
           </div>
         </div>

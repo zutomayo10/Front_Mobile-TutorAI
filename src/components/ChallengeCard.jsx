@@ -5,17 +5,8 @@ const ChallengeCard = ({ challenge, onPlay }) => {
   
   return (
     <div 
-      className={`relative bg-opacity-90 backdrop-blur-md rounded-2xl p-4 md:p-6 border-2 transform transition-all duration-300 cursor-pointer shadow-xl h-full flex flex-col ${
-        isCompleted 
-          ? 'bg-gradient-to-br from-yellow-600 to-yellow-700 border-yellow-400 border-opacity-50 shadow-yellow-500/40' 
-          : 'bg-green-800 border-white border-opacity-20'
-      } ${challenge.shadowColor}`}
+      className="relative bg-green-800 bg-opacity-90 backdrop-blur-md rounded-2xl p-4 md:p-6 border-2 border-white border-opacity-20 transform transition-all duration-300 cursor-pointer shadow-xl h-full flex flex-col"
     >
-      {/* Efecto de brillo para completados */}
-      {isCompleted && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-300 to-transparent opacity-20 rounded-2xl animate-pulse"></div>
-      )}
-      
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-10 rounded-2xl transition-opacity duration-300"></div>
       
       {/* Badge de COMPLETADO */}
@@ -30,74 +21,42 @@ const ChallengeCard = ({ challenge, onPlay }) => {
       
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3 md:space-x-4">
-          <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center text-2xl md:text-3xl shadow-lg transform hover:rotate-12 transition-transform duration-300 ${
-            isCompleted 
-              ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' 
-              : 'bg-green-600'
-          }`}>
-            {isCompleted ? '👑' : challenge.icon}
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-green-600 flex items-center justify-center text-2xl md:text-3xl shadow-lg transform hover:rotate-12 transition-transform duration-300">
+            {challenge.icon}
           </div>
           <div>
             <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-lg mb-1">
               {challenge.title}
             </h3>
-            {isCompleted && (
-              <div className="flex items-center space-x-1 text-yellow-200 text-sm">
-                <span>⭐</span>
-                <span>⭐</span>
-                <span>⭐</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
       
       <div className="mb-4">
         <div className="flex items-center justify-between mb-3">
-          <p className={`font-semibold flex items-center ${
-            isCompleted ? 'text-yellow-100' : 'text-white text-opacity-90'
-          }`}>
-            <span className="mr-2">{isCompleted ? '🎊' : '🎯'}</span>
+          <p className="font-semibold flex items-center text-white text-opacity-90">
+            <span className="mr-2">🎯</span>
             {challenge.completed}/{challenge.total} misiones completadas
           </p>
-          <p className={`font-bold text-lg ${
-            isCompleted ? 'text-yellow-200' : 'text-yellow-300'
-          }`}>
+          <p className="font-bold text-lg text-yellow-300">
             {challenge.progress}%
           </p>
         </div>
         
         <div className="w-full bg-black bg-opacity-30 rounded-full h-3 overflow-hidden shadow-inner">
           <div
-            className={`h-3 rounded-full transition-all duration-1000 shadow-lg relative ${
-              isCompleted 
-                ? 'bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400' 
-                : 'bg-green-500'
-            }`}
+            className="h-3 rounded-full transition-all duration-1000 shadow-lg relative bg-green-500"
             style={{ width: `${challenge.progress}%` }}
           >
-            <div className={`absolute inset-0 rounded-full ${
-              isCompleted 
-                ? 'bg-white bg-opacity-40 animate-pulse' 
-                : 'bg-white bg-opacity-30 animate-pulse'
-            }`}></div>
-            {isCompleted && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-yellow-900">✨</span>
-              </div>
-            )}
+            <div className="absolute inset-0 rounded-full bg-white bg-opacity-30 animate-pulse"></div>
           </div>
         </div>
       </div>
 
       <button 
         onClick={() => onPlay(challenge)}
-        className={`w-full hover:opacity-90 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer ${
-          isCompleted 
-            ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700' 
-            : ''
-        }`}
-        style={!isCompleted ? { backgroundColor: '#F19506' } : {}}
+        className="w-full hover:opacity-90 transform transition-all duration-200 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2 cursor-pointer"
+        style={{ backgroundColor: '#F19506' }}
       >
         <span>{isCompleted ? '🎉 ¡REPETIR AVENTURA!' : '¡JUGAR AHORA!'}</span>
       </button>

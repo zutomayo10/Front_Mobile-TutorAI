@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useExercises } from '../hooks/useExercises'
@@ -43,7 +43,6 @@ const Exercises = () => {
     progressPercentage
   } = useExercises()
 
-  // ⬇️ Ahora guarda solo la letra: "A" | "B" | "C" | "D" | "E"
   const [selectedOption, setSelectedOption] = useState(null)
   const [showResult, setShowResult] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
@@ -53,6 +52,7 @@ const Exercises = () => {
   const [levelResults, setLevelResults] = useState(null) // Datos de resultados del nivel
   const [firstAttemptResults, setFirstAttemptResults] = useState({}) // Rastrear si cada ejercicio fue correcto en el primer intento
   const [exerciseAttempts, setExerciseAttempts] = useState({}) // Contar intentos por ejercicio
+  const isFinishingQuizRef = useRef(false) // Flag para evitar múltiples ejecuciones (useRef para verificación inmediata)
 
   // Estado para fondo aleatorio
   const [quizBackground, setQuizBackground] = useState('')
@@ -74,7 +74,6 @@ const Exercises = () => {
     loadExercises(classroomId, courseId, topicId, levelId)
   }, [levelId])
 
-  // ⬇️ Recibe la letra y evalúa inmediatamente
   const handleOptionSelect = async (optionId, value) => {
     if (showResult) return
     
@@ -130,8 +129,8 @@ const Exercises = () => {
       correctOptionText: correctOptionText
     })
     
-    // Actualizar estadísticas del juego
-    completeExercise(isCorrect)
+    // No dar XP por ejercicio individual, solo al completar el nivel completo
+    // completeExercise(isCorrect) - DESHABILITADO: XP se otorga al finalizar el nivel
     
     // Enviar respuesta al backend de forma asíncrona (sin bloquear la UI)
     // Solo enviar si el levelRun está en progreso (IN_PROGRESS)
@@ -172,22 +171,34 @@ const Exercises = () => {
     
     // Si fue correcta, avanzar a la siguiente pregunta
     if (isLastExercise) {
-      // Completar el quiz
-      setQuizCompleted(true)
-    } else {
-      // Limpiar estados antes de avanzar
-      setSelectedOption(null)
-      setShowResult(false)
-      setAnswerResult(null)
-      
-      const moved = nextExercise()
-      if (!moved) {
-        setQuizCompleted(true)
-      }
+      // Completar el quiz directamente sin pantalla intermedia
+      handleFinishQuiz()
+      return // IMPORTANTE: evitar que continúe ejecutando código
+    }
+    
+    // Limpiar estados antes de avanzar
+    setSelectedOption(null)
+    setShowResult(false)
+    setAnswerResult(null)
+    
+    const moved = nextExercise()
+    if (!moved) {
+      handleFinishQuiz()
     }
   }
 
   const handleFinishQuiz = async () => {
+    console.log('🔍 handleFinishQuiz llamado, isFinishingQuiz actual:', isFinishingQuizRef.current);
+    
+    // Evitar múltiples ejecuciones (verificación inmediata con useRef)
+    if (isFinishingQuizRef.current) {
+      console.log('⚠️ handleFinishQuiz ya está en ejecución, ignorando llamada duplicada');
+      return;
+    }
+    
+    isFinishingQuizRef.current = true;
+    console.log('🔴 Iniciando handleFinishQuiz (flag activado)');
+    
     // Contar solo las respuestas correctas en el PRIMER intento
     const correctFirstAttempts = Object.values(firstAttemptResults).filter(result => result === true).length
     const totalQuestions = exerciseProgress.total
@@ -264,6 +275,18 @@ const Exercises = () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     console.log('⏳ Esperando a que el backend actualice...');
     
+    // Calcular XP ganada igual que en useGameStats
+    let xpGained = 50; // XP base
+    if (medalType === 'oro') {
+      xpGained = 150;
+    } else if (medalType === 'plata') {
+      xpGained = 100;
+    } else if (medalType === 'bronce') {
+      xpGained = 75;
+    }
+    const bonusXP = correctFirstAttempts * 15;
+    xpGained += bonusXP;
+    
     // Navegar de vuelta a la vista de niveles con forceReload para que se actualicen
     navigate('/levels', {
       state: {
@@ -279,7 +302,7 @@ const Exercises = () => {
           totalQuestions,
           stars,
           medalType,
-          experienceGained: correctFirstAttempts * 15
+          experienceGained: xpGained
         }
       }
     })
@@ -458,161 +481,7 @@ const Exercises = () => {
     ? ((exerciseProgress.current + 1) / exerciseProgress.total) * 100 
     : 0
 
-  // Pantalla de quiz completado
-  if (quizCompleted) {
-    const correctFirstAttempts = Object.values(firstAttemptResults).filter(result => result === true).length
-    const totalQuestions = exerciseProgress.total
-    const scoreOver20 = Math.ceil((correctFirstAttempts / totalQuestions) * 20)
-    
-    const getMedalInfo = (score) => {
-      if (score >= 17 && score <= 20) {
-        return {
-          type: 'oro',
-          image: '/images/medalla_oro.png',
-          color: 'text-yellow-400',
-          bgColor: 'from-yellow-400 to-yellow-600'
-        }
-      } else if (score >= 14 && score <= 16) {
-        return {
-          type: 'plata',
-          image: '/images/medalla_plata.png',
-          color: 'text-gray-300',
-          bgColor: 'from-gray-300 to-gray-500'
-        }
-      } else if (score >= 11 && score <= 13) {
-        return {
-          type: 'bronce',
-          image: '/images/medalla_bronce.png',
-          color: 'text-orange-400',
-          bgColor: 'from-orange-400 to-orange-600'
-        }
-      } else {
-        return {
-          type: 'ninguna',
-          image: null,
-          color: 'text-gray-400',
-          bgColor: 'from-gray-400 to-gray-600'
-        }
-      }
-    }
-    
-    const medalInfo = getMedalInfo(scoreOver20)
-    
-    // Calcular XP ganada según medalla
-    let baseXP = 50;
-    if (medalInfo.type === 'oro') baseXP = 150;
-    else if (medalInfo.type === 'plata') baseXP = 100;
-    else if (medalInfo.type === 'bronce') baseXP = 75;
-    
-    const bonusXP = correctFirstAttempts * 15;
-    const totalXPGained = baseXP + bonusXP;
-    
-    return (
-      <div className="min-h-screen relative flex items-center justify-center" style={{ minHeight: '100dvh' }}>
-        <div 
-          className="fixed inset-0"
-          style={{
-            backgroundColor: '#1a472a',
-            backgroundImage: `url("/images/fondo_playa.jpeg")`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
-        />
-
-        <div className="fixed inset-0 bg-black bg-opacity-60" />
-        
-        <div className="relative z-10 max-w-sm w-full mx-4">
-          <div className="rounded-3xl p-6 shadow-2xl text-center relative overflow-hidden" style={{backgroundColor: '#2d5016'}}>
-            
-            <div className="mb-6">
-              <h1 className="text-white text-2xl font-bold mb-2 drop-shadow-lg">
-                ¡Felicidades!
-              </h1>
-              <p className="text-white text-lg font-medium">
-                Has ganado <span className="font-bold text-yellow-300">{totalXPGained} puntos de XP</span>
-              </p>
-              <p className="text-white text-sm opacity-80 mt-1">
-                (Medalla {medalInfo.type}: {baseXP} XP + Bonus: {bonusXP} XP)
-              </p>
-            </div>
-
-            <div className="mb-6 flex justify-center">
-              {medalInfo.image ? (
-                <div className="relative">
-                  <img 
-                    src={medalInfo.image}
-                    alt={`Medalla de ${medalInfo.type}`}
-                    className="w-48 h-48 object-contain drop-shadow-2xl"
-                  />
-                </div>
-              ) : (
-                <div className="w-48 h-48 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-2xl">
-                  <span className="text-8xl">😔</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <p className="text-white text-lg font-semibold mb-2">
-                Correctas en primer intento: {correctFirstAttempts}/{totalQuestions}
-              </p>
-              <div className="text-center">
-                <p className="text-white text-lg font-medium mb-1">
-                  TU PUNTAJE FUE:
-                </p>
-                <div className={`text-6xl font-bold ${medalInfo.color} drop-shadow-2xl mb-4`}>
-                  {scoreOver20}
-                </div>
-                
-                {/* Mostrar estrellas ganadas */}
-                {(() => {
-                  let stars = 0;
-                  if (scoreOver20 >= 17) stars = 3;
-                  else if (scoreOver20 >= 14) stars = 2;
-                  else if (scoreOver20 >= 11) stars = 1;
-                  
-                  return stars > 0 && (
-                    <div className="flex justify-center items-center space-x-2 mb-2">
-                      {[1, 2, 3].map((star) => (
-                        <svg
-                          key={star}
-                          className={`w-8 h-8 transition-all duration-300 ${
-                            star <= stars
-                              ? 'text-yellow-400 fill-current drop-shadow-lg animate-pulse'
-                              : 'text-gray-600 fill-current opacity-30'
-                          }`}
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                        </svg>
-                      ))}
-                    </div>
-                  );
-                })()}
-                
-                {scoreOver20 >= 11 && (
-                  <p className="text-yellow-300 text-sm font-semibold animate-bounce">
-                    ¡{scoreOver20 >= 17 ? '3' : scoreOver20 >= 14 ? '2' : '1'} Estrella{scoreOver20 >= 14 ? 's' : ''} ganada{scoreOver20 >= 14 ? 's' : ''}!
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button 
-                onClick={handleFinishQuiz}
-                className="w-full py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl transition-all duration-300 hover:opacity-90 transform hover:scale-105"
-                style={{backgroundColor: '#F19506'}}
-              >
-                CONTINUAR
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Pantalla de quiz completado eliminada - ahora va directo a handleFinishQuiz
 
   // Pantalla de resultados detallados del nivel
   if (showLevelResults && levelResults) {

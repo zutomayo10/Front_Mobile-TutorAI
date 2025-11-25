@@ -20,6 +20,12 @@ const Dashboard = () => {
   const { user, userInfo } = useAuth()
   const { stats, accuracy, progressPercentage, isNewUser } = useGameStats()
   const navigate = useNavigate()
+  
+  // Debug: Verificar que stats se están cargando
+  useEffect(() => {
+    console.log('🎮 [Dashboard] userInfo:', userInfo);
+    console.log('📊 [Dashboard] stats recibidos:', stats);
+  }, [userInfo, stats]);
   const [levelsCompletedByClassroom, setLevelsCompletedByClassroom] = useState(() => {
     // Cargar inmediatamente desde localStorage para mostrar datos al instante
     try {
@@ -59,7 +65,8 @@ const Dashboard = () => {
       levelsCompleted: stats.levelsCompleted,
       exercisesCompleted: stats.exercisesCompleted
     });
-  }, [stats]);
+    console.log('🎯 [Dashboard] Progreso de experiencia:', `${stats.experience.current}/${stats.experience.total} (${progressPercentage}%)`);
+  }, [stats, progressPercentage]);
 
   // Cargar niveles completados y totales por cada classroom desde el backend
   useEffect(() => {
@@ -280,8 +287,8 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <ExperienceBar 
-                  currentExp={stats.experience.current}
-                  totalExp={stats.experience.total}
+                  currentExp={stats?.experience?.current || 0}
+                  totalExp={stats?.experience?.total || 100}
                   isMobile={isMobile}
                 />
               </div>

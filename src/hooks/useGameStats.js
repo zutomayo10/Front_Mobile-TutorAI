@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 export const useGameStats = () => {
   const { isAuthenticated, userInfo } = useAuth();
   
-  // Estadísticas base para un usuario nuevo
+  // Estadísticas base para un usuario nuevo - comienza en 0 XP
   const [stats, setStats] = useState({
     level: 1,
     experience: {
@@ -26,25 +26,47 @@ export const useGameStats = () => {
 
   // Función para obtener clave específica del usuario
   const getStorageKey = () => {
+    // Usar name+lastNames como ID único si no hay id
     if (userInfo?.id) {
       return `gameStats_${userInfo.id}`;
+    } else if (userInfo?.name && userInfo?.lastNames) {
+      const uniqueId = `${userInfo.name}_${userInfo.lastNames}`.replace(/\s+/g, '_');
+      return `gameStats_${uniqueId}`;
     }
-    return null;
+    return 'gameStats_default';
   };
 
   // Cargar estadísticas desde localStorage o API
   useEffect(() => {
     if (isAuthenticated && userInfo) {
       const storageKey = getStorageKey();
+      console.log('🔑 [useGameStats] Storage key:', storageKey);
+      
       if (storageKey) {
         const savedStats = localStorage.getItem(storageKey);
+        console.log('📦 [useGameStats] Stats guardados:', savedStats);
+        
         if (savedStats) {
           try {
             const parsedStats = JSON.parse(savedStats);
-            setStats(prev => ({ ...prev, ...parsedStats }));
+            console.log('✅ [useGameStats] Stats cargados:', parsedStats);
+            
+            // Asegurar que experience tenga la estructura correcta
+            const validatedStats = {
+              ...parsedStats,
+              experience: {
+                current: parsedStats.experience?.current || 0,
+                total: parsedStats.experience?.total || 100
+              }
+            };
+            
+            console.log('🔍 [useGameStats] Stats validados:', validatedStats);
+            setStats(prev => ({ ...prev, ...validatedStats }));
           } catch (error) {
             console.error('Error cargando estadísticas guardadas:', error);
           }
+        } else {
+          console.log('⚠️ [useGameStats] No hay stats guardados, usando valores iniciales');
         }
       }
     } else {
@@ -108,7 +130,7 @@ export const useGameStats = () => {
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
-        newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria
+        newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria en 20%
       }
 
       saveStats(newStats);
@@ -134,7 +156,7 @@ export const useGameStats = () => {
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
-        newStats.experience.total = Math.floor(newStats.experience.total * 1.2);
+        newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria en 20%
       }
 
       saveStats(newStats);
@@ -158,7 +180,7 @@ export const useGameStats = () => {
         while (newStats.experience.current >= newStats.experience.total) {
           newStats.experience.current -= newStats.experience.total;
           newStats.level += 1;
-          newStats.experience.total = Math.floor(newStats.experience.total * 1.2);
+          newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria en 20%
         }
       }
 
@@ -182,7 +204,7 @@ export const useGameStats = () => {
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
-        newStats.experience.total = Math.floor(newStats.experience.total * 1.2);
+        newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria en 20%
       }
 
       saveStats(newStats);
@@ -227,7 +249,7 @@ export const useGameStats = () => {
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
-        newStats.experience.total = Math.floor(newStats.experience.total * 1.2);
+        newStats.experience.total = Math.floor(newStats.experience.total * 1.2); // Incrementar XP necesaria en 20%
         leveledUp = true;
         console.log(`🎉 [useGameStats] ¡Subiste al nivel ${newStats.level}!`);
       }
@@ -240,9 +262,19 @@ export const useGameStats = () => {
     });
   };
 
-  // Calcular estadísticas derivadas
+  // Calcular estadísticas derivadas con validación
   const accuracy = stats.totalAnswers > 0 ? Math.round((stats.correctAnswers / stats.totalAnswers) * 100) : 0;
-  const progressPercentage = Math.round((stats.experience.current / stats.experience.total) * 100);
+  const validExp = stats.experience || { current: 0, total: 100 };
+  const progressPercentage = validExp.total > 0 ? Math.round((validExp.current / validExp.total) * 100) : 0;
+
+  // Log cada vez que cambian los stats
+  useEffect(() => {
+    console.log('🔄 [useGameStats] Stats actualizados en hook:', {
+      level: stats.level,
+      exp: stats.experience,
+      progressPercentage
+    });
+  }, [stats, progressPercentage]);
 
   return {
     // Estados
