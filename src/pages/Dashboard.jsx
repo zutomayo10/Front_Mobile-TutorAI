@@ -321,19 +321,27 @@ const Dashboard = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-8">
-                <div className="text-white text-lg mb-4">
-                  Aún no tienes aulas asignadas
+              <div className="flex justify-center py-8">
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl border-2 border-white/20 max-w-md">
+                  <div className="text-center mb-6">
+                    <div className="text-6xl mb-4">🏫</div>
+                    <h3 className="text-white text-2xl font-bold mb-3">
+                      Aún no tienes aulas asignadas
+                    </h3>
+                    <p className="text-white text-base opacity-90 leading-relaxed">
+                      Contacta a tu profesor para que te agregue a un aula o únete usando un código de invitación
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/join-classroom')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>Unirse a un Aula</span>
+                  </button>
                 </div>
-                <p className="text-white text-sm opacity-80 mb-4">
-                  Contacta a tu profesor para que te agregue a un aula
-                </p>
-                <button
-                  onClick={() => navigate('/join-classroom')}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Unirse a un Aula
-                </button>
               </div>
             )}
           </div>

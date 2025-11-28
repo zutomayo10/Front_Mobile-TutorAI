@@ -162,6 +162,7 @@ export const AuthProvider = ({ children }) => {
         name: userData.name,
         lastNames: userData.lastNames,
         age: userData.age,
+        gender: userData.gender,
         passwordNumber: userData.passwordNumber
       });
       

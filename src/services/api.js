@@ -53,11 +53,12 @@ export const loginTeacher = async ({ email, password }) => {
 };
 
 // POST /auth/register/student
-export const registerStudent = async ({ name, lastNames, age, passwordNumber }) => {
+export const registerStudent = async ({ name, lastNames, age, passwordNumber, gender }) => {
   const { data, status } = await api.post("/auth/register/student", {
     name,
     lastNames,
     age,
+    gender,
     passwordNumber,
   });
   if (status === 200 && data?.token) setToken(data.token);

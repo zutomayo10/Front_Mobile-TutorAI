@@ -12,7 +12,8 @@ const Login = () => {
     name: '',
     lastNames: '',
     passwordNumber: '',
-    age: ''
+    age: '',
+    gender: ''
   })
   const [error, setError] = useState('')
   
@@ -25,7 +26,8 @@ const Login = () => {
       name: '',
       lastNames: '',
       passwordNumber: '',
-      age: ''
+      age: '',
+      gender: ''
     })
     setError('')
   }, [location.pathname])
@@ -65,6 +67,11 @@ const Login = () => {
       return
     }
 
+    if (!isLogin && !formData.gender) {
+      setError('El género es requerido para el registro')
+      return
+    }
+
     try {
       let result;
       
@@ -81,7 +88,8 @@ const Login = () => {
           name: formData.name,
           lastNames: formData.lastNames,
           passwordNumber: formData.passwordNumber,
-          age: parseInt(formData.age)
+          age: parseInt(formData.age),
+          gender: formData.gender
         })
       }
 
@@ -183,29 +191,60 @@ const Login = () => {
           </div>
 
           {!isLogin && (
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">
-                Edad:
-              </label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                  </svg>
+            <>
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">
+                  Edad:
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleInputChange}
+                    placeholder="Edad"
+                    min="5"
+                    max="100"
+                    className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+                    required={!isLogin}
+                  />
                 </div>
-                <input
-                  type="number"
-                  name="age"
-                  value={formData.age}
-                  onChange={handleInputChange}
-                  placeholder="Edad"
-                  min="5"
-                  max="100"
-                  className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
-                  required={!isLogin}
-                />
               </div>
-            </div>
+
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">
+                  Género:
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base appearance-none cursor-pointer"
+                    required={!isLogin}
+                  >
+                    <option value="" disabled>Selecciona tu género</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           <div>

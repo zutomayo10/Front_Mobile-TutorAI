@@ -17,20 +17,34 @@ export const useUserStats = () => {
   const getTotalStars = () => {
     try {
       const savedStars = localStorage.getItem('level-stars');
-      if (savedStars) {
-        const starsData = JSON.parse(savedStars);
-        return Object.values(starsData).reduce((sum, stars) => sum + stars, 0);
+      if (!savedStars) {
+        return 0;
       }
+      const starsData = JSON.parse(savedStars);
+      // Verificar que starsData sea un objeto válido y no esté vacío
+      if (!starsData || typeof starsData !== 'object' || Object.keys(starsData).length === 0) {
+        return 0;
+      }
+      const total = Object.values(starsData).reduce((sum, stars) => sum + (typeof stars === 'number' ? stars : 0), 0);
+      console.log('📊 Total de estrellas calculadas:', total, 'de', starsData);
+      return total;
     } catch (error) {
       console.error('Error contando estrellas:', error);
+      return 0;
     }
-    return 0;
   };
 
   // Función para obtener niveles completados desde backend
   const getCompletedLevels = async () => {
     try {
       const classrooms = await studentGetClassrooms();
+      
+      // Si no hay classrooms, retornar valores en 0 sin intentar más llamadas
+      if (!classrooms || classrooms.length === 0) {
+        console.log('📚 Usuario sin aulas asignadas');
+        return { totalLevels: 0, completedLevels: 0, totalClassrooms: 0 };
+      }
+      
       let totalLevels = 0;
       let completedLevels = 0;
       
@@ -62,6 +76,11 @@ export const useUserStats = () => {
       
       return { totalLevels, completedLevels, totalClassrooms: classrooms.length };
     } catch (error) {
+      // Si el error es 403 (sin aulas), no mostrar como error
+      if (error.response?.status === 403) {
+        console.log('📚 Usuario sin aulas asignadas (403)');
+        return { totalLevels: 0, completedLevels: 0, totalClassrooms: 0 };
+      }
       console.error('Error obteniendo niveles completados:', error);
       return { totalLevels: 0, completedLevels: 0, totalClassrooms: 0 };
     }

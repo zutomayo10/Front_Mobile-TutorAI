@@ -121,7 +121,9 @@ const Profile = () => {
                     <h1 className="text-gray-800 text-3xl font-bold drop-shadow-2xl mb-1">
                       🌟 {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : (userName || 'Estudiante')} 🌟
                     </h1>
-                    <p className="text-green-700 text-lg font-semibold drop-shadow">¡Mago Matemático en Entrenamiento!</p>
+                    <p className="text-green-700 text-lg font-semibold drop-shadow">
+                      ¡{userInfo?.gender === 'F' ? 'Maga' : 'Mago'} Matemátic{userInfo?.gender === 'F' ? 'a' : 'o'} en Entrenamiento!
+                    </p>
                     {userInfo && (
                       <div className="text-green-600 text-sm mt-1">
                         {userInfo.age && `${userInfo.age} años`} | {user?.role || 'Estudiante'}
