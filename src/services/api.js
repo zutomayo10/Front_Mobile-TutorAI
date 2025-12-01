@@ -211,6 +211,16 @@ export const studentGetLevelRunResult = async (levelRunId) => {
   return data;
 };
 
+// GET /student/classroom/course/topic/level/run/{levelRunId}/result/solutions
+export const studentGetLevelRunSolutions = async (levelRunId) => {
+  const { data } = await api.get(
+    `/student/classroom/course/topic/level/run/${levelRunId}/result/solutions`,
+    { headers: authHeaders() }
+  );
+  // Retorna: [{ exerciseNumber, question, detailedSolution }]
+  return data;
+};
+
 // POST /student/classroom/course/topic/level/{levelId}/repeat
 export const studentRepeatLevel = async (levelId) => {
   const { data } = await api.post(

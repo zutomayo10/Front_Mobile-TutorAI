@@ -6,6 +6,7 @@ import { useGameStats } from '../hooks/useGameStats'
 import { useAuth } from '../contexts/AuthContext'
 import { studentGetLevelRunResult } from '../services/api'
 import ChestButton from '../components/ChestButton'
+import SolucionesDetalladas from '../components/SolucionesDetalladas'
 
 const Exercises = () => {
   const { isMobile } = useDeviceDetection()
@@ -46,6 +47,7 @@ const Exercises = () => {
     markAnswer,
     reloadAttemptHistory,
     getLevelResults, // Nueva función para obtener resultados
+    getLevelSolutions, // Nueva función para obtener soluciones detalladas
     repeatLevel, // Nueva función para repetir nivel
     nextExercise,
     previousExercise,
@@ -61,6 +63,9 @@ const Exercises = () => {
   const [answerResult, setAnswerResult] = useState(null)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [userAnswers, setUserAnswers] = useState([])
+  const [showSolucionesDetalladas, setShowSolucionesDetalladas] = useState(false) // Nuevo estado para mostrar soluciones detalladas
+  const [solucionesData, setSolucionesData] = useState([]) // Datos de soluciones detalladas del backend
+  const [isNavigating, setIsNavigating] = useState(false) // Estado para evitar mostrar el cuestionario durante navegación
   const [showLevelResults, setShowLevelResults] = useState(false) // Nuevo estado para mostrar resultados finales
   const [levelResults, setLevelResults] = useState(null) // Datos de resultados del nivel
   const [firstAttemptResults, setFirstAttemptResults] = useState({}) // Rastrear si cada ejercicio fue correcto en el primer intento
@@ -211,6 +216,38 @@ const Exercises = () => {
     
     isFinishingQuizRef.current = true;
     console.log('🔴 Iniciando handleFinishQuiz (flag activado)');
+    
+    // Cargar las soluciones detalladas del backend
+    if (levelRunInfo?.levelRunId) {
+      console.log('📚 Cargando soluciones detalladas del backend...');
+      const result = await getLevelSolutions(levelRunInfo.levelRunId);
+      
+      if (result.success && result.data) {
+        console.log('✅ Soluciones cargadas exitosamente:', result.data);
+        setSolucionesData(result.data);
+      } else {
+        console.error('❌ Error cargando soluciones:', result.error);
+        // Aún así mostrar la ventana con las soluciones básicas
+        setSolucionesData([]);
+      }
+    } else {
+      console.warn('⚠️ No hay levelRunId disponible para cargar soluciones');
+      setSolucionesData([]);
+    }
+    
+    // Mostrar las soluciones detalladas
+    setShowSolucionesDetalladas(true);
+  }
+  
+  const handleContinueFromSoluciones = async () => {
+    // Activar estado de navegación ANTES de ocultar las soluciones
+    setIsNavigating(true);
+    
+    // Pequeño delay para asegurar que el estado se actualice
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Ocultar las soluciones detalladas
+    setShowSolucionesDetalladas(false);
     
     // Contar solo las respuestas correctas en el PRIMER intento
     const correctFirstAttempts = Object.values(firstAttemptResults).filter(result => result === true).length
@@ -592,6 +629,25 @@ const Exercises = () => {
     )
   }
 
+  // Si está navegando, mostrar una pantalla de carga o vacía
+  if (isNavigating) {
+    return (
+      <div className="min-h-screen relative" style={{ minHeight: '100dvh' }}>
+        <div 
+          className="fixed inset-0"
+          style={{
+            backgroundColor: '#1a472a',
+            backgroundImage: quizBackground ? `url("${quizBackground}")` : `url("/images/pregunta.jpeg")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="fixed inset-0 bg-black bg-opacity-70" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen relative" style={{ minHeight: '100dvh' }}>
       <div 
@@ -725,6 +781,16 @@ const Exercises = () => {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Soluciones Detalladas */}
+      {showSolucionesDetalladas && (
+        <SolucionesDetalladas
+          exercises={exercises}
+          userAnswers={userAnswers}
+          solucionesData={solucionesData}
+          onContinue={handleContinueFromSoluciones}
+        />
       )}
       
     </div>

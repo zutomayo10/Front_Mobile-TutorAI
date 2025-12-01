@@ -1,6 +1,6 @@
 // src/hooks/useExercises.js
 import { useState, useEffect } from 'react';
-import { studentGetLevels, studentGetExercises, studentMarkOption, studentCheckLevelPassed, studentPlayLevel, studentGetLevelRunAttempts, studentGetLevelRunResult, studentRepeatLevel } from '../services/api';
+import { studentGetLevels, studentGetExercises, studentMarkOption, studentCheckLevelPassed, studentPlayLevel, studentGetLevelRunAttempts, studentGetLevelRunResult, studentRepeatLevel, studentGetLevelRunSolutions } from '../services/api';
 
 export const useExercises = () => {
   const [levels, setLevels] = useState([]);
@@ -352,6 +352,20 @@ export const useExercises = () => {
     return false;
   };
 
+  // Obtener las soluciones detalladas del nivel
+  const getLevelSolutions = async (levelRunId) => {
+    try {
+      console.log('📚 Obteniendo soluciones detalladas para levelRunId:', levelRunId);
+      const solutions = await studentGetLevelRunSolutions(levelRunId);
+      console.log('✅ Soluciones obtenidas:', solutions);
+      return { success: true, data: solutions };
+    } catch (err) {
+      console.error('❌ Error obteniendo soluciones:', err);
+      const errorMessage = err.response?.data?.message || 'Error al cargar las soluciones';
+      return { success: false, error: errorMessage };
+    }
+  };
+
   // Ir a un ejercicio específico
   const goToExercise = (exerciseIndex) => {
     if (exerciseIndex >= 0 && exerciseIndex < exercises.length) {
@@ -395,6 +409,7 @@ export const useExercises = () => {
     setSelectedLevel,
     reloadAttemptHistory, // Nueva función para recargar historial
     getLevelResults, // Nueva función para obtener resultados finales
+    getLevelSolutions, // Nueva función para obtener soluciones detalladas
     repeatLevel, // Nueva función para repetir nivel
     
     // Navegación
