@@ -13,19 +13,39 @@ export const useUserStats = () => {
     isLoading: true
   });
 
-  // Función para contar estrellas totales desde localStorage
+  // Función para obtener clave específica del usuario (igual que useGameStats)
+  const getStorageKey = () => {
+    if (userInfo?.id) {
+      return `levelStars_${userInfo.id}`;
+    } else if (userInfo?.name && userInfo?.lastNames) {
+      const uniqueId = `${userInfo.name}_${userInfo.lastNames}`.replace(/\s+/g, '_');
+      return `levelStars_${uniqueId}`;
+    }
+    return 'levelStars_default';
+  };
+
+  // Función para contar estrellas totales desde localStorage (usando clave por usuario)
   const getTotalStars = () => {
     try {
-      const savedStars = localStorage.getItem('level-stars');
-      if (!savedStars) {
+      const storageKey = getStorageKey();
+      console.log('🔑 [useUserStats] Storage key para estrellas:', storageKey);
+      
+      const savedStars = localStorage.getItem(storageKey);
+      console.log('📦 [useUserStats] Estrellas guardadas:', savedStars);
+      
+      if (!savedStars || savedStars === 'null' || savedStars === 'undefined') {
+        console.log('📊 Usuario nuevo: Sin estrellas guardadas');
         return 0;
       }
+      
       const starsData = JSON.parse(savedStars);
       // Verificar que starsData sea un objeto válido y no esté vacío
       if (!starsData || typeof starsData !== 'object' || Object.keys(starsData).length === 0) {
+        console.log('📊 Usuario nuevo: Objeto de estrellas vacío');
         return 0;
       }
-      const total = Object.values(starsData).reduce((sum, stars) => sum + (typeof stars === 'number' ? stars : 0), 0);
+      
+      const total = Object.values(starsData).reduce((sum, stars) => sum + (typeof stars === 'number' && stars > 0 ? stars : 0), 0);
       console.log('📊 Total de estrellas calculadas:', total, 'de', starsData);
       return total;
     } catch (error) {
@@ -103,16 +123,54 @@ export const useUserStats = () => {
       setStats(prev => ({ ...prev, isLoading: true }));
 
       try {
+        // Limpiar clave legacy 'level-stars' si existe (migración)
+        const legacyStars = localStorage.getItem('level-stars');
+        if (legacyStars) {
+          console.log('🔄 Migrando estrellas de clave legacy a clave por usuario');
+          const storageKey = getStorageKey();
+          if (storageKey && storageKey !== 'levelStars_default') {
+            // Solo migrar si tenemos un ID de usuario válido
+            try {
+              const parsed = JSON.parse(legacyStars);
+              if (parsed && typeof parsed === 'object') {
+                localStorage.setItem(storageKey, legacyStars);
+                console.log('✅ Estrellas migradas a:', storageKey);
+              }
+            } catch (e) {
+              console.warn('⚠️ No se pudo migrar estrellas legacy');
+            }
+          }
+          // Limpiar legacy
+          localStorage.removeItem('level-stars');
+        }
+
+        // Limpiar localStorage corrupto si existe (para la clave actual del usuario)
+        const storageKey = getStorageKey();
+        try {
+          const savedStars = localStorage.getItem(storageKey);
+          if (savedStars && savedStars !== 'null' && savedStars !== 'undefined') {
+            const parsed = JSON.parse(savedStars);
+            // Si no es un objeto válido, limpiar
+            if (!parsed || typeof parsed !== 'object') {
+              console.warn('⚠️ Limpiando localStorage de estrellas corrupto');
+              localStorage.removeItem(storageKey);
+            }
+          }
+        } catch (cleanupError) {
+          console.warn('⚠️ Error limpiando localStorage, removiendo datos corruptos');
+          localStorage.removeItem(storageKey);
+        }
+
         // Obtener datos del backend
         const { totalLevels, completedLevels, totalClassrooms } = await getCompletedLevels();
         
-        // Obtener estrellas de localStorage
+        // Obtener estrellas de localStorage (ahora con clave por usuario)
         const totalStars = getTotalStars();
 
         setStats({
           totalLevels,
           completedLevels,
-          totalStars,
+          totalStars: totalStars || 0, // Asegurar que siempre sea un número
           totalClassrooms,
           isLoading: false
         });

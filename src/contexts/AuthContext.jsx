@@ -57,6 +57,8 @@ export const AuthProvider = ({ children }) => {
   const loadUserInfo = async () => {
     try {
       const info = await getUserInfo();
+      console.log('👤 [AuthContext] userInfo cargado:', info);
+      console.log('👤 [AuthContext] gender en userInfo:', info?.gender, 'tipo:', typeof info?.gender);
       setUserInfo(info);
       return info;
     } catch (error) {

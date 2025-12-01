@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useExercises } from '../hooks/useExercises'
 import { useGameStats } from '../hooks/useGameStats'
+import { useAuth } from '../contexts/AuthContext'
 import { studentGetLevelRunResult } from '../services/api'
 import ChestButton from '../components/ChestButton'
 
@@ -11,6 +12,18 @@ const Exercises = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { completeExercise, completeLevel } = useGameStats()
+  const { userInfo } = useAuth()
+  
+  // Función para obtener clave específica del usuario (igual que useGameStats)
+  const getStarsStorageKey = () => {
+    if (userInfo?.id) {
+      return `levelStars_${userInfo.id}`;
+    } else if (userInfo?.name && userInfo?.lastNames) {
+      const uniqueId = `${userInfo.name}_${userInfo.lastNames}`.replace(/\s+/g, '_');
+      return `levelStars_${uniqueId}`;
+    }
+    return 'levelStars_default';
+  };
   
   // Datos desde la navegación
   const { 
@@ -227,17 +240,20 @@ const Exercises = () => {
     
     console.log('🏅 Medalla calculada:', { stars, medalType });
     
-    // Guardar estrellas en localStorage (solo si es mejor que el anterior)
+    // Guardar estrellas en localStorage (solo si es mejor que el anterior) - usando clave por usuario
     if (levelId && stars > 0) {
       try {
-        const starsData = localStorage.getItem('level-stars')
+        const storageKey = getStarsStorageKey();
+        console.log('🔑 [Exercises] Storage key para estrellas:', storageKey);
+        
+        const starsData = localStorage.getItem(storageKey)
         const stars_obj = starsData ? JSON.parse(starsData) : {}
         
         // Solo actualizar si es más estrellas que antes
         if (!stars_obj[levelId] || stars > stars_obj[levelId]) {
           stars_obj[levelId] = stars
-          localStorage.setItem('level-stars', JSON.stringify(stars_obj))
-          console.log(`⭐ Guardadas ${stars} estrellas para nivel ${levelId}`)
+          localStorage.setItem(storageKey, JSON.stringify(stars_obj))
+          console.log(`⭐ Guardadas ${stars} estrellas para nivel ${levelId} en ${storageKey}`)
         }
       } catch (error) {
         console.error('Error al guardar estrellas:', error)

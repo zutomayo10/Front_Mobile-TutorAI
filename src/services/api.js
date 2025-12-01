@@ -54,6 +54,7 @@ export const loginTeacher = async ({ email, password }) => {
 
 // POST /auth/register/student
 export const registerStudent = async ({ name, lastNames, age, passwordNumber, gender }) => {
+  console.log('🔑 [API] Registrando estudiante con gender:', gender);
   const { data, status } = await api.post("/auth/register/student", {
     name,
     lastNames,
@@ -61,7 +62,9 @@ export const registerStudent = async ({ name, lastNames, age, passwordNumber, ge
     gender,
     passwordNumber,
   });
-  if (status === 200 && data?.token) setToken(data.token);
+  if (status === 200 && data?.token) {
+    setToken(data.token);
+  }
   return data;
 };
 
@@ -232,13 +235,17 @@ export const studentGetExercises = async (levelId) => {
 // El backend valida que el exerciseId pertenezca al mismo level del levelRun
 export const studentMarkOption = async (levelRunId, exerciseId, markedOption) => {
   const url = `/student/classroom/course/topic/level/run/${levelRunId}/exercise/${exerciseId}/answer`;
+  
+  // Generar fecha en formato ISO (YYYY-MM-DD)
+  const date = new Date().toISOString().split('T')[0];
+  
   console.log('🎯 Enviando POST a:', url);
-  console.log('📊 Parámetros:', { levelRunId, exerciseId, markedOption });
+  console.log('📊 Parámetros:', { levelRunId, exerciseId, markedOption, date });
   
   try {
     const { data, status } = await api.post(
       url,
-      { markedOption },
+      { markedOption, date },
       { headers: authHeaders() }
     );
     console.log('✅ Respuesta exitosa:', { status, data });
@@ -300,7 +307,19 @@ export const fetchLogin = async (body) => loginTeacher(body);
 // GET /user/info
 export const getUserInfo = async () => {
   const { data } = await api.get("/user/info", { headers: authHeaders() });
-  // data -> { name, lastNames, age }
+  console.log('👤 [API] getUserInfo response:', data);
+  
+  // Obtener gender del endpoint específico
+  try {
+    const genderResponse = await api.get("/user/info/gender", { headers: authHeaders() });
+    if (genderResponse.data) {
+      data.gender = genderResponse.data;
+      console.log('👤 [API] Gender obtenido del backend:', genderResponse.data);
+    }
+  } catch (error) {
+    console.warn('Error obteniendo gender del backend:', error);
+  }
+  
   return data;
 };
 // Alias por conveniencia (mismo endpoint)

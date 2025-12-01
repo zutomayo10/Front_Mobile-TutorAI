@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
 import { useExercises } from '../hooks/useExercises'
+import { useAuth } from '../contexts/AuthContext'
 import Sidebar from '../components/Sidebar'
 import BottomNavigation from '../components/BottomNavigation'
 
@@ -11,6 +12,7 @@ const Levels = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { levels, loadLevels, isLoading, error } = useExercises()
+  const { userInfo } = useAuth()
   const [showLockedModal, setShowLockedModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState(null)
@@ -18,10 +20,22 @@ const Levels = () => {
   // Obtener datos del estado de navegación
   const { classroomId, courseId, topicId, topicName, forceReload, message, quizResults } = location.state || {}
 
-  // Función para obtener estrellas de un nivel desde localStorage
+  // Función para obtener clave específica del usuario (igual que useGameStats)
+  const getStarsStorageKey = () => {
+    if (userInfo?.id) {
+      return `levelStars_${userInfo.id}`;
+    } else if (userInfo?.name && userInfo?.lastNames) {
+      const uniqueId = `${userInfo.name}_${userInfo.lastNames}`.replace(/\s+/g, '_');
+      return `levelStars_${uniqueId}`;
+    }
+    return 'levelStars_default';
+  };
+
+  // Función para obtener estrellas de un nivel desde localStorage (usando clave por usuario)
   const getLevelStars = (levelId) => {
     try {
-      const starsData = localStorage.getItem('level-stars')
+      const storageKey = getStarsStorageKey();
+      const starsData = localStorage.getItem(storageKey)
       if (starsData) {
         const stars = JSON.parse(starsData)
         return stars[levelId] || 0

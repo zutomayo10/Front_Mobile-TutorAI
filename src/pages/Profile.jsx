@@ -122,7 +122,7 @@ const Profile = () => {
                       🌟 {userInfo ? `${userInfo.name} ${userInfo.lastNames}` : (userName || 'Estudiante')} 🌟
                     </h1>
                     <p className="text-green-700 text-lg font-semibold drop-shadow">
-                      ¡{userInfo?.gender === 'F' ? 'Maga' : 'Mago'} Matemátic{userInfo?.gender === 'F' ? 'a' : 'o'} en Entrenamiento!
+                      ¡{userInfo?.gender === 'F' || userInfo?.gender === 'FEMALE' ? 'Maga' : 'Mago'} Matemátic{userInfo?.gender === 'F' || userInfo?.gender === 'FEMALE' ? 'a' : 'o'} en Acción!
                     </p>
                     {userInfo && (
                       <div className="text-green-600 text-sm mt-1">
