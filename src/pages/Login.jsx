@@ -43,7 +43,7 @@ const Login = () => {
       setFormData(prev => ({
         ...prev,
         [name]: value
-      })
+      }))
     }
     
     if (error) setError('')

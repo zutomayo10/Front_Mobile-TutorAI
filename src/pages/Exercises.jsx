@@ -112,7 +112,7 @@ const Exercises = () => {
       setFirstAttemptResults(prev => ({
         ...prev,
         [exerciseNum]: isCorrect
-      })
+      }))
     }
     
     setUserAnswers(prev => [...prev, {
@@ -128,7 +128,7 @@ const Exercises = () => {
     const optionLetters = ['A', 'B', 'C', 'D', 'E']
     const correctOptionIndex = optionLetters.indexOf(correctOption)
     const correctOptionText = correctOptionIndex >= 0 
-      : currentExercise[optionKeys[correctOptionIndex]] 
+      ? currentExercise[optionKeys[correctOptionIndex]] 
       : correctOption
     
     setAnswerResult({

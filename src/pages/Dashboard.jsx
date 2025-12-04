@@ -150,7 +150,7 @@ const Dashboard = () => {
       loadLevelsData();
     }, 100);
     
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timeoutId);
   }, [classrooms]);
 
   const handlePlayChallenge = (challenge) => {
