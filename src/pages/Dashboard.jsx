@@ -21,13 +21,11 @@ const Dashboard = () => {
   const { stats, accuracy, progressPercentage, isNewUser } = useGameStats()
   const navigate = useNavigate()
   
-  // Debug: Verificar que stats se están cargando
   useEffect(() => {
     console.log('🎮 [Dashboard] userInfo:', userInfo);
     console.log('📊 [Dashboard] stats recibidos:', stats);
   }, [userInfo, stats]);
   const [levelsCompletedByClassroom, setLevelsCompletedByClassroom] = useState(() => {
-    // Cargar inmediatamente desde localStorage para mostrar datos al instante
     try {
       const cached = localStorage.getItem('classroomProgress');
       if (cached) {
@@ -42,7 +40,6 @@ const Dashboard = () => {
   })
   
   const [totalLevelsByClassroom, setTotalLevelsByClassroom] = useState(() => {
-    // Cargar totales desde cache
     try {
       const cached = localStorage.getItem('classroomTotals');
       if (cached) {
@@ -56,7 +53,6 @@ const Dashboard = () => {
     return {};
   })
 
-  // Log para debugging de experiencia
   useEffect(() => {
     console.log('📊 [Dashboard] Stats actualizados:', {
       level: stats.level,
@@ -68,7 +64,6 @@ const Dashboard = () => {
     console.log('🎯 [Dashboard] Progreso de experiencia:', `${stats.experience.current}/${stats.experience.total} (${progressPercentage}%)`);
   }, [stats, progressPercentage]);
 
-  // Cargar niveles completados y totales por cada classroom desde el backend
   useEffect(() => {
     const loadLevelsData = async () => {
       if (!classrooms || classrooms.length === 0) return;
@@ -78,33 +73,26 @@ const Dashboard = () => {
       const totalsData = {};
       
       try {
-        // Procesar todos los classrooms en paralelo
         await Promise.all(classrooms.map(async (classroom) => {
           try {
             let totalCompleted = 0;
             let totalLevels = 0;
             
-            // Obtener cursos del classroom
             const coursesData = await getCourses(classroom.id);
             
             if (coursesData && coursesData.length > 0) {
-              // Procesar todos los cursos en paralelo
               const courseResults = await Promise.all(coursesData.map(async (course) => {
                 try {
-                  // Obtener topics del curso
                   const topicsData = await getTopics(classroom.id, course.courseId);
                   
                   if (topicsData && topicsData.length > 0) {
-                    // Procesar todos los topics en paralelo
                     const topicResults = await Promise.all(topicsData.map(async (topic) => {
                       try {
-                        // Obtener niveles del topic
                         const levels = await studentGetLevels(topic.topicId);
                         
                         if (levels && levels.length > 0) {
                           const totalInTopic = levels.length;
                           
-                          // Verificar todos los niveles en paralelo
                           const levelChecks = await Promise.all(levels.map(async (level) => {
                             try {
                               return await studentCheckLevelPassed(level.levelId);
@@ -113,7 +101,6 @@ const Dashboard = () => {
                             }
                           }));
                           
-                          // Contar cuántos están completados
                           const completedInTopic = levelChecks.filter(passed => passed).length;
                           
                           return { completed: completedInTopic, total: totalInTopic };
@@ -149,7 +136,6 @@ const Dashboard = () => {
           }
         }));
         
-        // Guardar en localStorage para próxima carga
         localStorage.setItem('classroomProgress', JSON.stringify(completedData));
         localStorage.setItem('classroomTotals', JSON.stringify(totalsData));
         setLevelsCompletedByClassroom(completedData);
@@ -160,8 +146,7 @@ const Dashboard = () => {
       }
     };
     
-    // Ejecutar la carga en background después de un pequeño delay
-    const timer = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       loadLevelsData();
     }, 100);
     
@@ -169,7 +154,6 @@ const Dashboard = () => {
   }, [classrooms]);
 
   const handlePlayChallenge = (challenge) => {
-    // Si el desafío tiene datos de aula real, navegar a los temas
     if (challenge.classroomData) {
       navigate('/topics', { 
         state: { 
@@ -178,7 +162,6 @@ const Dashboard = () => {
         } 
       })
     } else {
-      // Fallback al sistema anterior
       navigate('/exercises', { 
         state: { 
           challengeTitle: challenge.title
@@ -187,16 +170,13 @@ const Dashboard = () => {
     }
   }
 
-  // Convertir aulas/cursos en desafíos para la interfaz existente
   const challenges = useMemo(() => {
     return classrooms.map((classroom, index) => {
       const classroomId = classroom.id;
       
-      // Obtener niveles completados y totales para este classroom desde el backend
       const completedLevelsInClassroom = levelsCompletedByClassroom[classroomId] || 0;
       const totalLevelsInClassroom = totalLevelsByClassroom[classroomId] || 0;
       
-      // Calcular progreso basado en niveles completados vs total real
       const progress = totalLevelsInClassroom > 0 
         ? Math.min(Math.round((completedLevelsInClassroom / totalLevelsInClassroom) * 100), 100) 
         : 0;

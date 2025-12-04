@@ -9,7 +9,6 @@ const ChallengeCard = ({ challenge, onPlay }) => {
     >
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-10 rounded-2xl transition-opacity duration-300"></div>
       
-      {/* Badge de COMPLETADO */}
       {isCompleted && (
         <div className="absolute -top-3 -right-3 z-10">
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white font-bold text-xs px-3 py-1 rounded-full shadow-lg border-2 border-white flex items-center space-x-1 animate-bounce">

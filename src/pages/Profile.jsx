@@ -59,10 +59,9 @@ const Profile = () => {
     }
   }
 
-  // Variables dinámicas basadas en estadísticas reales
   const userLevel = stats.level
-  const totalAchievements = 6 // Total de logros disponibles
-  const achievedCount = Math.min(Math.floor(stats.level / 2), totalAchievements) // Logros basados en nivel
+  const totalAchievements = 6
+  const achievedCount = Math.min(Math.floor(stats.level / 2), totalAchievements)
   const achievements = achievedCount
 
   return (
@@ -162,7 +161,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Información del Usuario */}
             <div className="mb-6">
               <div className="rounded-2xl p-4 shadow-xl border border-white/20" style={{backgroundColor: '#239B56'}}>
                 <div className="flex items-center space-x-2 mb-3">
@@ -264,7 +262,6 @@ const Profile = () => {
             <div className="mb-6">
               <h4 className="text-white font-semibold mb-3 text-center">📱 Avatares Divertidos</h4>
               {isMobile ? (
-                // AJUSTE PARA MOBILE
                 <div className="overflow-x-auto pb-2">
                   <div className="flex gap-3 px-2" style={{ width: 'max-content' }}>
                     {avatarOptions.map((emoji, index) => (
@@ -286,7 +283,6 @@ const Profile = () => {
                   </div>
                 </div>
               ) : (
-                // AJUSTE PARA PC
                 <div className="grid grid-cols-6 gap-3">
                   {avatarOptions.map((emoji, index) => (
                     <button

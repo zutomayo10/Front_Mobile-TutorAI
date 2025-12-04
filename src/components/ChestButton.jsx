@@ -29,7 +29,6 @@ const ChestButton = ({
       className="relative flex flex-col items-center"
       style={{ opacity: selectedAnswer && !isSelected ? 0.5 : 1 }}
     >
-      {/* Texto de la opción ENCIMA del cofre */}
       {option.text && (
         <div className="mb-3 max-w-xs text-center pointer-events-none">
           <div className="rounded-lg px-4 py-2 shadow-lg border-2 border-green-400" style={{backgroundColor: 'rgba(35, 155, 86, 0.9)'}}>
@@ -47,7 +46,6 @@ const ChestButton = ({
         } ${isSelected ? 'scale-110' : ''} shadow-2xl overflow-hidden`}
         style={containerStyle}
       >
-        {/* Imagen de fondo del cofre */}
         <img 
           src="/images/cofre_cerrado.png"
           alt=""
@@ -55,7 +53,6 @@ const ChestButton = ({
           draggable="false"
         />
         
-        {/* Overlay de color según estado */}
         {isCorrect && (
           <div className="absolute inset-0 bg-green-500 opacity-40"></div>
         )}
@@ -72,7 +69,6 @@ const ChestButton = ({
           </span>
         </div>
         
-        {/* Iconos de correcto/incorrecto */}
         {isCorrect && (
           <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-400 rounded-full flex items-center justify-center shadow-lg animate-bounce z-20">
             <span className="text-4xl">✔️</span>
@@ -85,7 +81,6 @@ const ChestButton = ({
           </div>
         )}
         
-        {/* Efecto de selección */}
         {isSelected && !showResult && (
           <div className="absolute inset-0 rounded-2xl animate-pulse" style={{
             boxShadow: '0 0 30px 10px rgba(255, 255, 0, 0.6)'

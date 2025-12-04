@@ -76,7 +76,6 @@ const Sidebar = () => {
           })}
         </nav>
         
-        {/* Botón de cerrar sesión */}
         <div className="mt-8">
           <button
             onClick={() => {

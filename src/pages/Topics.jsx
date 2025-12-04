@@ -1,4 +1,3 @@
-// src/pages/Topics.jsx
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
@@ -12,7 +11,6 @@ const Topics = () => {
   const location = useLocation()
   const { courses, topics, loadCourses, loadTopics, isLoading, error } = useClassroomData()
   
-  // Obtener datos del estado de navegación
   const { classroomId, classroomName, forceReload } = location.state || {}
   const [selectedCourse, setSelectedCourse] = useState(null)
 
@@ -32,7 +30,6 @@ const Topics = () => {
   }, [selectedCourse, classroomId])
 
   const handleSelectTopic = (topic, index) => {
-    // Extraer topicId y nombre del topic
     const topicId = topic.topicId || topic.id;
     const topicName = topic.name || topic;
     
@@ -47,7 +44,7 @@ const Topics = () => {
         courseId: selectedCourse.courseId,
         topicId: topicId,
         topicName: topicName,
-        forceReload: Date.now() // Forzar recarga de niveles
+        forceReload: Date.now()
       }
     })
   }

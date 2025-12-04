@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 export const useGameStats = () => {
   const { isAuthenticated, userInfo } = useAuth();
   
-  // Estadísticas base para un usuario nuevo - comienza en 0 XP
+
   const [stats, setStats] = useState({
     level: 1,
     experience: {
@@ -21,12 +21,10 @@ export const useGameStats = () => {
     levelsCompleted: 0,
     achievements: [],
     streakDays: 0,
-    totalStudyTime: 0 // en minutos
+    totalStudyTime: 0
   });
 
-  // Función para obtener clave específica del usuario
   const getStorageKey = () => {
-    // Usar name+lastNames como ID único si no hay id
     if (userInfo?.id) {
       return `gameStats_${userInfo.id}`;
     } else if (userInfo?.name && userInfo?.lastNames) {
@@ -36,7 +34,6 @@ export const useGameStats = () => {
     return 'gameStats_default';
   };
 
-  // Cargar estadísticas desde localStorage o API
   useEffect(() => {
     if (isAuthenticated && userInfo) {
       const storageKey = getStorageKey();
@@ -51,7 +48,6 @@ export const useGameStats = () => {
             const parsedStats = JSON.parse(savedStats);
             console.log('✅ [useGameStats] Stats cargados:', parsedStats);
             
-            // Asegurar que experience tenga la estructura correcta
             const validatedStats = {
               ...parsedStats,
               experience: {
@@ -70,7 +66,6 @@ export const useGameStats = () => {
         }
       }
     } else {
-      // Reset stats when not authenticated
       setStats({
         level: 1,
         experience: { current: 0, total: 100 },
@@ -88,7 +83,6 @@ export const useGameStats = () => {
     }
   }, [isAuthenticated, userInfo]);
 
-  // Función para resetear estadísticas a valores iniciales
   const resetStats = () => {
     const initialStats = {
       level: 1,
@@ -107,11 +101,10 @@ export const useGameStats = () => {
     setStats(initialStats);
     const storageKey = getStorageKey();
     if (storageKey) {
-      localStorage.removeItem(storageKey); // Limpiar localStorage también
+      localStorage.removeItem(storageKey);
     }
   };
 
-  // Guardar estadísticas en localStorage
   const saveStats = (newStats) => {
     const storageKey = getStorageKey();
     if (storageKey) {
@@ -120,13 +113,11 @@ export const useGameStats = () => {
     setStats(newStats);
   };
 
-  // Ganar experiencia
   const gainExperience = (amount) => {
     setStats(prevStats => {
       let newStats = { ...prevStats };
       newStats.experience.current += amount;
 
-      // Verificar si subió de nivel
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
@@ -138,7 +129,6 @@ export const useGameStats = () => {
     });
   };
 
-  // Completar ejercicio
   const completeExercise = (isCorrect = true) => {
     setStats(prevStats => {
       const newStats = { 
@@ -148,11 +138,9 @@ export const useGameStats = () => {
         correctAnswers: isCorrect ? prevStats.correctAnswers + 1 : prevStats.correctAnswers
       };
 
-      // Ganar XP por completar ejercicio
-      const xpGained = isCorrect ? 15 : 5; // Más XP por respuesta correcta
+      const xpGained = isCorrect ? 15 : 5;
       newStats.experience.current += xpGained;
 
-      // Verificar subida de nivel
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
@@ -164,7 +152,6 @@ export const useGameStats = () => {
     });
   };
 
-  // Unirse a aula
   const joinClassroom = () => {
     setStats(prevStats => {
       const newStats = { 
@@ -172,11 +159,9 @@ export const useGameStats = () => {
         classroomsJoined: prevStats.classroomsJoined + 1
       };
 
-      // XP por unirse a primera aula
       if (newStats.classroomsJoined === 1) {
         newStats.experience.current += 50;
         
-        // Verificar subida de nivel
         while (newStats.experience.current >= newStats.experience.total) {
           newStats.experience.current -= newStats.experience.total;
           newStats.level += 1;
@@ -189,7 +174,6 @@ export const useGameStats = () => {
     });
   };
 
-  // Desbloquear tema
   const unlockTopic = () => {
     setStats(prevStats => {
       const newStats = { 
@@ -197,10 +181,8 @@ export const useGameStats = () => {
         topicsUnlocked: prevStats.topicsUnlocked + 1
       };
 
-      // XP por desbloquear temas
       newStats.experience.current += 25;
       
-      // Verificar subida de nivel
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
         newStats.level += 1;
@@ -212,7 +194,6 @@ export const useGameStats = () => {
     });
   };
 
-  // Completar nivel con información de medalla
   const completeLevel = (medalType = null, correctFirstAttempts = 0, totalQuestions = 0) => {
     console.log('🔴 [useGameStats] Iniciando completeLevel');
     console.log('📋 [useGameStats] Parámetros:', { medalType, correctFirstAttempts, totalQuestions });
@@ -224,18 +205,16 @@ export const useGameStats = () => {
         levelsCompleted: prevStats.levelsCompleted + 1
       };
 
-      // Calcular XP según la medalla obtenida
-      let xpGained = 50; // XP base por completar nivel
+      let xpGained = 50;
       
       if (medalType === 'oro') {
-        xpGained = 150; // 3 estrellas
+        xpGained = 150;
       } else if (medalType === 'plata') {
-        xpGained = 100; // 2 estrellas
+        xpGained = 100;
       } else if (medalType === 'bronce') {
-        xpGained = 75; // 1 estrella
+        xpGained = 75;
       }
       
-      // Bonus por respuestas correctas en primer intento
       const bonusXP = correctFirstAttempts * 15;
       xpGained += bonusXP;
       
@@ -244,7 +223,6 @@ export const useGameStats = () => {
       newStats.experience.current += xpGained;
       console.log(`📈 [useGameStats] XP nueva: ${newStats.experience.current}/${newStats.experience.total}`);
       
-      // Verificar subida de nivel
       let leveledUp = false;
       while (newStats.experience.current >= newStats.experience.total) {
         newStats.experience.current -= newStats.experience.total;
@@ -262,12 +240,10 @@ export const useGameStats = () => {
     });
   };
 
-  // Calcular estadísticas derivadas con validación
   const accuracy = stats.totalAnswers > 0 ? Math.round((stats.correctAnswers / stats.totalAnswers) * 100) : 0;
   const validExp = stats.experience || { current: 0, total: 100 };
   const progressPercentage = validExp.total > 0 ? Math.round((validExp.current / validExp.total) * 100) : 0;
 
-  // Log cada vez que cambian los stats
   useEffect(() => {
     console.log('🔄 [useGameStats] Stats actualizados en hook:', {
       level: stats.level,
@@ -277,12 +253,10 @@ export const useGameStats = () => {
   }, [stats, progressPercentage]);
 
   return {
-    // Estados
     stats,
     accuracy,
     progressPercentage,
     
-    // Acciones
     gainExperience,
     completeExercise,
     joinClassroom,
@@ -290,7 +264,6 @@ export const useGameStats = () => {
     completeLevel,
     resetStats,
     
-    // Getters útiles
     isNewUser: stats.exercisesCompleted === 0 && stats.classroomsJoined === 0,
     hasCompletedFirstExercise: stats.exercisesCompleted > 0,
     hasJoinedFirstClassroom: stats.classroomsJoined > 0

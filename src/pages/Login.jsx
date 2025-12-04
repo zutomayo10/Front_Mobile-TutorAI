@@ -17,10 +17,8 @@ const Login = () => {
   })
   const [error, setError] = useState('')
   
-  // Determinar si está en modo login o registro basado en la ruta
   const isLogin = location.pathname === '/login'
 
-  // Limpiar formulario cuando cambia la ruta
   useEffect(() => {
     setFormData({
       name: '',
@@ -35,7 +33,6 @@ const Login = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target
     
-    // Para el campo de contraseña numérica, solo permitir números
     if (name === 'passwordNumber') {
       const numericValue = value.replace(/[^0-9]/g, '')
       setFormData(prev => ({
@@ -46,10 +43,9 @@ const Login = () => {
       setFormData(prev => ({
         ...prev,
         [name]: value
-      }))
+      })
     }
     
-    // Limpiar error cuando el usuario empiece a escribir
     if (error) setError('')
   }
 
@@ -76,14 +72,12 @@ const Login = () => {
       let result;
       
       if (isLogin) {
-        // Intentar login
         result = await login({
           name: formData.name,
           lastNames: formData.lastNames,
           passwordNumber: formData.passwordNumber
         })
       } else {
-        // Intentar registro
         result = await register({
           name: formData.name,
           lastNames: formData.lastNames,
@@ -99,7 +93,6 @@ const Login = () => {
       } else {
         setError(result.error || `Error en el ${isLogin ? 'login' : 'registro'}`)
         
-        // Si es error 403 en login, sugerir registro
         if (isLogin && result.statusCode === 403) {
           setError(result.error + ' ¿Necesitas registrarte?')
         }

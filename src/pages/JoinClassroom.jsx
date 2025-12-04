@@ -1,4 +1,3 @@
-// src/pages/JoinClassroom.jsx
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClassroomData } from '../hooks/useClassroomData'

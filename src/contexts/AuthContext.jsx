@@ -25,24 +25,19 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Función para limpiar todos los datos del usuario del localStorage
   const clearUserLocalStorage = (userId) => {
     if (userId) {
       localStorage.removeItem(`gameStats_${userId}`);
       localStorage.removeItem(`tutor-ai-profile-image_${userId}`);
-      // Eliminado: tutor-ai-uploaded-image ya que no se usa más
     }
   };
 
-  // Función para limpiar claves antiguas (sin userId) que puedan estar causando conflictos
   const clearLegacyLocalStorage = () => {
-    // Solo limpiar gameStats sin userId (legacy)
     const legacyGameStats = localStorage.getItem('gameStats');
     if (legacyGameStats) {
       localStorage.removeItem('gameStats');
     }
     
-    // Limpiar imágenes subidas (ya no se usan)
     localStorage.removeItem('tutor-ai-uploaded-image');
     Object.keys(localStorage).forEach(key => {
       if (key.includes('tutor-ai-uploaded-image')) {
@@ -50,10 +45,8 @@ export const AuthProvider = ({ children }) => {
       }
     });
     
-    // NO eliminar tutor-ai-profile-image ya que es el sistema actual de avatares
   };
 
-  // Cargar información del usuario autenticado
   const loadUserInfo = async () => {
     try {
       const info = await getUserInfo();
@@ -67,10 +60,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Verificar si hay un token válido al cargar la aplicación
   useEffect(() => {
     const initAuth = async () => {
-      // Limpiar claves antiguas que puedan causar conflictos
       clearLegacyLocalStorage();
       
       const token = getToken();
@@ -78,15 +69,12 @@ export const AuthProvider = ({ children }) => {
         try {
           const role = getRoleBasedOnToken();
           if (role) {
-            // Intentar cargar información del usuario para validar el token
             const info = await loadUserInfo();
             
-            // Solo autenticar si se pudo cargar la info del usuario
             if (info) {
               setUser({ role });
               setIsAuthenticated(true);
             } else {
-              // Token inválido o expirado, limpiarlo
               console.log('Token inválido o expirado, limpiando sesión...');
               apiLogout();
             }
@@ -108,7 +96,6 @@ export const AuthProvider = ({ children }) => {
       
       console.log('Intentando login con:', credentials);
       
-      // Para estudiantes (usando name, lastNames, passwordNumber)
       const response = await loginStudent({
         name: credentials.name,
         lastNames: credentials.lastNames,
@@ -120,7 +107,6 @@ export const AuthProvider = ({ children }) => {
       if (response) {
         setUser({ role: response });
         setIsAuthenticated(true);
-        // Cargar información del usuario después del login exitoso
         await loadUserInfo();
         return { success: true, role: response };
       }
@@ -158,8 +144,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       
       console.log('Intentando registro con:', userData);
-      
-      // Para estudiantes
       const response = await registerStudent({
         name: userData.name,
         lastNames: userData.lastNames,
@@ -174,7 +158,6 @@ export const AuthProvider = ({ children }) => {
         const role = getRoleBasedOnToken();
         setUser({ role });
         setIsAuthenticated(true);
-        // Cargar información del usuario después del registro exitoso
         await loadUserInfo();
         return { success: true, data: response };
       }
@@ -208,7 +191,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Limpiar localStorage específico del usuario
     clearUserLocalStorage(userInfo?.id);
     
     apiLogout();

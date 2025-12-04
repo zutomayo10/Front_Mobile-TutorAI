@@ -7,13 +7,11 @@ export const useUserProfile = () => {
   const STORAGE_KEY = `tutor-ai-profile-image_${userId}`
   
   const [profileImage, setProfileImage] = useState(() => {
-    // Cargar inmediatamente del localStorage al inicializar
     return localStorage.getItem(STORAGE_KEY) || '🧙‍♂️'
   })
   const [userName] = useState('Juan Chavez')
   const [isLoading, setIsLoading] = useState(false)
 
-  // Actualizar el profileImage cuando cambia el userId o se carga por primera vez
   useEffect(() => {
     const savedImage = localStorage.getItem(STORAGE_KEY)
     if (savedImage) {

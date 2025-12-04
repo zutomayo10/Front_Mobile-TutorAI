@@ -11,13 +11,11 @@ export const useClassroomData = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Cargar aulas del estudiante
   const loadClassrooms = async () => {
     try {
       setIsLoading(true);
       setError(null);
       const data = await getClassrooms();
-      // Ordenar por ID para mantener un orden consistente
       const sortedData = (data || []).sort((a, b) => a.id - b.id);
       setClassrooms(sortedData);
     } catch (err) {
@@ -28,7 +26,6 @@ export const useClassroomData = () => {
     }
   };
 
-  // Cargar cursos de un aula específica
   const loadCourses = async (classroomId) => {
     try {
       setIsLoading(true);
@@ -43,7 +40,6 @@ export const useClassroomData = () => {
     }
   };
 
-  // Cargar temas de un curso específico
   const loadTopics = async (classroomId, courseId) => {
     try {
       setIsLoading(true);
@@ -58,13 +54,11 @@ export const useClassroomData = () => {
     }
   };
 
-  // Unirse a un aula
   const joinClassroom = async (classroomId) => {
     try {
       setIsLoading(true);
       setError(null);
       await studentJoinClassroom(classroomId);
-      // Recargar las aulas para ver la nueva
       await loadClassrooms();
       return { success: true };
     } catch (err) {
@@ -76,12 +70,10 @@ export const useClassroomData = () => {
     }
   };
 
-  // Cargar aulas automáticamente al montar el hook
   useEffect(() => {
     loadClassrooms();
   }, []);
 
-  // Cargar cursos cuando se selecciona un aula
   useEffect(() => {
     if (selectedClassroom) {
       loadCourses(selectedClassroom.id);
@@ -91,7 +83,6 @@ export const useClassroomData = () => {
     }
   }, [selectedClassroom]);
 
-  // Cargar temas cuando se selecciona un curso
   useEffect(() => {
     if (selectedClassroom && selectedCourse) {
       loadTopics(selectedClassroom.id, selectedCourse.courseId);
@@ -101,7 +92,6 @@ export const useClassroomData = () => {
   }, [selectedClassroom, selectedCourse]);
 
   return {
-    // Estados
     classrooms,
     selectedClassroom,
     courses,
@@ -110,7 +100,6 @@ export const useClassroomData = () => {
     isLoading,
     error,
     
-    // Acciones
     setSelectedClassroom,
     setSelectedCourse,
     loadClassrooms,
@@ -118,7 +107,6 @@ export const useClassroomData = () => {
     loadTopics,
     joinClassroom,
     
-    // Utilidades
     clearError: () => setError(null)
   };
 };

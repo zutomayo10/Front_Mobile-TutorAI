@@ -1,12 +1,10 @@
 import React from 'react';
 
 const ExperienceBar = ({ currentExp = 0, totalExp = 100, isMobile }) => {
-  // Validar valores y calcular porcentaje
   const validCurrentExp = currentExp || 0;
   const validTotalExp = totalExp || 100;
   const percentage = validTotalExp > 0 ? Math.round((validCurrentExp / validTotalExp) * 100) : 0;
   
-  // Log para debugging
   console.log('📊 [ExperienceBar] Props recibidos:', { 
     currentExp, 
     totalExp, 
@@ -17,7 +15,6 @@ const ExperienceBar = ({ currentExp = 0, totalExp = 100, isMobile }) => {
 
   return (
     <>
-      {/* Mobile y Tablet: debajo del avatar */}
       <div className="mt-4 w-full xl2:hidden">
         <div className="flex items-center bg-[#239B56] rounded-xl px-4 py-2 border border-white/30">
           <div className="flex items-center space-x-2 mr-2 flex-shrink-0">
@@ -40,7 +37,6 @@ const ExperienceBar = ({ currentExp = 0, totalExp = 100, isMobile }) => {
         </div>
       </div>
 
-      {/* Desktop: esquina superior derecha */}
       <div className="hidden xl2:block absolute right-4 top-4">
         <div className="flex items-center bg-[#239B56] rounded-xl px-6 py-3 border border-white/30">
           <div className="flex items-center space-x-3 mr-4">

@@ -1,4 +1,3 @@
-// src/pages/Levels.jsx
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useDeviceDetection } from '../hooks/useDeviceDetection'
@@ -17,10 +16,8 @@ const Levels = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState(null)
   
-  // Obtener datos del estado de navegación
   const { classroomId, courseId, topicId, topicName, forceReload, message, quizResults } = location.state || {}
 
-  // Función para obtener clave específica del usuario (igual que useGameStats)
   const getStarsStorageKey = () => {
     if (userInfo?.id) {
       return `levelStars_${userInfo.id}`;
@@ -31,7 +28,6 @@ const Levels = () => {
     return 'levelStars_default';
   };
 
-  // Función para obtener estrellas de un nivel desde localStorage (usando clave por usuario)
   const getLevelStars = (levelId) => {
     try {
       const storageKey = getStarsStorageKey();
@@ -56,23 +52,19 @@ const Levels = () => {
     loadLevels(classroomId, courseId, topicId)
   }, [topicId, forceReload])
 
-  // Mostrar mensaje de éxito si viene de completar un nivel
   useEffect(() => {
     if (message && quizResults) {
       setSuccessMessage({ message, quizResults })
       setShowSuccessModal(true)
-      // Invalidar cache de progreso para que se recargue en Dashboard
       localStorage.removeItem('classroomProgress')
       localStorage.removeItem('classroomTotals')
       console.log('🗑️ Cache de progreso y totales invalidado - se recargará en Dashboard')
-      // Limpiar el state después de mostrarlo
       window.history.replaceState({}, document.title)
     }
   }, [message, quizResults])
 
   const handleSelectLevel = (level) => {
     if (!level.isAccessible) {
-      // Mostrar modal de nivel bloqueado
       setShowLockedModal(true)
       return;
     }
@@ -95,7 +87,7 @@ const Levels = () => {
       state: {
         classroomId,
         classroomName: topicName,
-        forceReload: Date.now() // Forzar recarga al volver
+        forceReload: Date.now()
       }
     })
   }
@@ -160,19 +152,17 @@ const Levels = () => {
               </p>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-500 text-white rounded-lg">
                 {error}
               </div>
             )}
 
-            {/* Levels Grid */}
             {levels.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {levels.map((level, index) => {
                   const levelStars = getLevelStars(level.levelId);
-                  const isCompleted = level.hasPassed; // Ya no requiere estrellas, solo hasPassed del backend
+                  const isCompleted = level.hasPassed;
                   
                   return (
                     <div
@@ -189,10 +179,10 @@ const Levels = () => {
                       <div className="flex items-center space-x-4 mb-4">
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
                           isCompleted
-                            ? 'bg-gradient-to-br from-green-400 to-green-600'  // Verde para completado
+                            ? 'bg-gradient-to-br from-green-400 to-green-600'
                             : level.isAccessible 
-                              ? 'bg-gradient-to-br from-yellow-400 to-orange-500' // Amarillo para disponible
-                              : 'bg-gradient-to-br from-gray-400 to-gray-600'       // Gris para bloqueado
+                              ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                              : 'bg-gradient-to-br from-gray-400 to-gray-600'
                         }`}>
                           {isCompleted ? (
                             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -267,7 +257,6 @@ const Levels = () => {
       
       {isMobile && <BottomNavigation />}
       
-      {/* Modal de nivel bloqueado */}
       {showLockedModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-8 shadow-2xl border-4 border-red-300 text-center max-w-md w-full transform transition-all duration-500 scale-100 animate-bounce-in">
@@ -291,7 +280,6 @@ const Levels = () => {
         </div>
       )}
 
-      {/* Modal de éxito al completar nivel */}
       {showSuccessModal && successMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-8 shadow-2xl border-4 border-green-300 text-center max-w-md w-full transform transition-all duration-500 scale-100 animate-bounce-in">

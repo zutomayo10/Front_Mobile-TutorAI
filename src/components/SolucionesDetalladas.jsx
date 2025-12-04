@@ -3,20 +3,16 @@ import React, { useState } from 'react'
 const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onContinue }) => {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   
-  // Generar solución detallada combinando datos del backend con ejercicios locales
   const generateDetailedSolution = (exercise) => {
-    // Primero intentar obtener del backend
     const backendSolution = solucionesData.find(sol => sol.exerciseNumber === exercise.exerciseNumber)
     if (backendSolution?.detailedSolution) {
       return backendSolution.detailedSolution
     }
     
-    // Si el ejercicio tiene su propia solución detallada o explicación
     if (exercise.detailedSolution || exercise.explanation) {
       return exercise.detailedSolution || exercise.explanation
     }
     
-    // Generar una solución básica como fallback
     const correctOption = exercise.correctOption?.toUpperCase()
     const optionKeys = { 'A': 'optionA', 'B': 'optionB', 'C': 'optionC', 'D': 'optionD', 'E': 'optionE' }
     const correctText = exercise[optionKeys[correctOption]]
@@ -24,7 +20,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
     return `La respuesta correcta es la opción ${correctOption}: "${correctText}".\n\nRevisa bien el enunciado de la pregunta y compara con esta opción para entender por qué es la correcta.`
   }
   
-  // Combinar ejercicios con las respuestas del usuario y soluciones del backend
   const exercisesWithAnswers = exercises.map((exercise, index) => {
     const userAnswer = userAnswers.find(ans => ans.exerciseNumber === exercise.exerciseNumber)
     const backendSolution = solucionesData.find(sol => sol.exerciseNumber === exercise.exerciseNumber)
@@ -34,7 +29,7 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
       userAnswer: userAnswer?.markedOption || null,
       correctAnswer: exercise.correctOption,
       isCorrect: userAnswer?.isCorrect || false,
-      question: backendSolution?.question || exercise.question, // Usar pregunta del backend si está disponible
+      question: backendSolution?.question || exercise.question,
       detailedSolution: generateDetailedSolution(exercise)
     }
   })
@@ -67,7 +62,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
   
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" style={{ minHeight: '100dvh' }}>
-      {/* Fondo con imagen */}
       <div 
         className="fixed inset-0"
         style={{
@@ -79,10 +73,8 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
       />
       <div className="fixed inset-0 bg-black bg-opacity-60" />
       
-      {/* Contenido */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-3 md:p-4">
         <div className="w-full max-w-3xl my-2 sm:my-3 md:my-4">
-          {/* Header */}
           <div className="bg-white/95 backdrop-blur-sm rounded-t-2xl sm:rounded-t-3xl p-3 sm:p-4 md:p-5 shadow-xl">
             <div className="text-center mb-2 sm:mb-3">
               <div className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-full text-sm sm:text-base md:text-lg font-bold mb-1 sm:mb-2">
@@ -94,9 +86,7 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
             </p>
           </div>
           
-          {/* Exercise Card */}
           <div className="bg-white/95 backdrop-blur-sm p-3 sm:p-4 md:p-5 shadow-xl">
-            {/* Exercise Number Badge */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <div className="bg-gradient-to-r from-purple-500 to-purple-700 text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold shadow-lg">
                 {currentExercise.exerciseNumber}
@@ -108,7 +98,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
               </div>
             </div>
             
-            {/* Question */}
             <div className="mb-3 sm:mb-4 bg-gray-50 rounded-xl p-3 sm:p-4 border-2 border-gray-200">
               <div className="text-xs sm:text-sm text-gray-500 font-semibold mb-1.5">Pregunta:</div>
               <p className="text-gray-800 text-xs sm:text-sm md:text-base leading-relaxed">
@@ -116,7 +105,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
               </p>
             </div>
             
-            {/* User Answer and Correct Answer */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
               <div className={`rounded-xl p-3 sm:p-4 border-2 ${
                 currentExercise.isCorrect 
@@ -143,9 +131,7 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
               </div>
             </div>
             
-            {/* Detailed Solution */}
             {currentExercise.isCorrect ? (
-              // Mensaje de felicitación para respuestas correctas
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 sm:p-4 border-2 border-green-300">
                 <div className="flex items-center mb-2">
                   <div className="text-lg sm:text-xl mr-2">🎉</div>
@@ -156,7 +142,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
                 </p>
               </div>
             ) : (
-              // Solución detallada para respuestas incorrectas
               <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border-2 border-blue-200">
                 <div className="flex items-center mb-2">
                   <div className="text-lg sm:text-xl mr-2">💡</div>
@@ -169,7 +154,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
             )}
           </div>
           
-          {/* Navigation Footer */}
           <div className="bg-white/95 backdrop-blur-sm rounded-b-2xl sm:rounded-b-3xl p-3 sm:p-4 shadow-xl">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 mb-3">
               <button
@@ -205,7 +189,6 @@ const SolucionesDetalladas = ({ exercises, userAnswers, solucionesData = [], onC
               )}
             </div>
             
-            {/* Progress dots */}
             <div className="flex justify-center flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
               {exercisesWithAnswers.map((_, index) => (
                 <div

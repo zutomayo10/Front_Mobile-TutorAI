@@ -13,7 +13,6 @@ export const useUserStats = () => {
     isLoading: true
   });
 
-  // Función para obtener clave específica del usuario (igual que useGameStats)
   const getStorageKey = () => {
     if (userInfo?.id) {
       return `levelStars_${userInfo.id}`;
@@ -24,7 +23,6 @@ export const useUserStats = () => {
     return 'levelStars_default';
   };
 
-  // Función para contar estrellas totales desde localStorage (usando clave por usuario)
   const getTotalStars = () => {
     try {
       const storageKey = getStorageKey();
@@ -39,7 +37,6 @@ export const useUserStats = () => {
       }
       
       const starsData = JSON.parse(savedStars);
-      // Verificar que starsData sea un objeto válido y no esté vacío
       if (!starsData || typeof starsData !== 'object' || Object.keys(starsData).length === 0) {
         console.log('📊 Usuario nuevo: Objeto de estrellas vacío');
         return 0;
@@ -54,12 +51,10 @@ export const useUserStats = () => {
     }
   };
 
-  // Función para obtener niveles completados desde backend
   const getCompletedLevels = async () => {
     try {
       const classrooms = await studentGetClassrooms();
       
-      // Si no hay classrooms, retornar valores en 0 sin intentar más llamadas
       if (!classrooms || classrooms.length === 0) {
         console.log('📚 Usuario sin aulas asignadas');
         return { totalLevels: 0, completedLevels: 0, totalClassrooms: 0 };
@@ -68,7 +63,6 @@ export const useUserStats = () => {
       let totalLevels = 0;
       let completedLevels = 0;
       
-      // Iterar por cada classroom para obtener sus niveles
       for (const classroom of classrooms) {
         if (classroom.courses && classroom.courses.length > 0) {
           for (const course of classroom.courses) {
@@ -78,7 +72,6 @@ export const useUserStats = () => {
                   const levels = await studentGetLevels(topic.topicId);
                   totalLevels += levels.length;
                   
-                  // Verificar cuántos niveles están completados
                   for (const level of levels) {
                     const hasPassed = await studentCheckLevelPassed(level.levelId);
                     if (hasPassed) {
@@ -96,7 +89,6 @@ export const useUserStats = () => {
       
       return { totalLevels, completedLevels, totalClassrooms: classrooms.length };
     } catch (error) {
-      // Si el error es 403 (sin aulas), no mostrar como error
       if (error.response?.status === 403) {
         console.log('📚 Usuario sin aulas asignadas (403)');
         return { totalLevels: 0, completedLevels: 0, totalClassrooms: 0 };
@@ -106,7 +98,6 @@ export const useUserStats = () => {
     }
   };
 
-  // Cargar estadísticas al montar el componente
   useEffect(() => {
     const loadStats = async () => {
       if (!isAuthenticated || !userInfo) {
@@ -123,13 +114,11 @@ export const useUserStats = () => {
       setStats(prev => ({ ...prev, isLoading: true }));
 
       try {
-        // Limpiar clave legacy 'level-stars' si existe (migración)
         const legacyStars = localStorage.getItem('level-stars');
         if (legacyStars) {
           console.log('🔄 Migrando estrellas de clave legacy a clave por usuario');
           const storageKey = getStorageKey();
           if (storageKey && storageKey !== 'levelStars_default') {
-            // Solo migrar si tenemos un ID de usuario válido
             try {
               const parsed = JSON.parse(legacyStars);
               if (parsed && typeof parsed === 'object') {
@@ -140,17 +129,14 @@ export const useUserStats = () => {
               console.warn('⚠️ No se pudo migrar estrellas legacy');
             }
           }
-          // Limpiar legacy
           localStorage.removeItem('level-stars');
         }
 
-        // Limpiar localStorage corrupto si existe (para la clave actual del usuario)
         const storageKey = getStorageKey();
         try {
           const savedStars = localStorage.getItem(storageKey);
           if (savedStars && savedStars !== 'null' && savedStars !== 'undefined') {
             const parsed = JSON.parse(savedStars);
-            // Si no es un objeto válido, limpiar
             if (!parsed || typeof parsed !== 'object') {
               console.warn('⚠️ Limpiando localStorage de estrellas corrupto');
               localStorage.removeItem(storageKey);
@@ -161,16 +147,14 @@ export const useUserStats = () => {
           localStorage.removeItem(storageKey);
         }
 
-        // Obtener datos del backend
         const { totalLevels, completedLevels, totalClassrooms } = await getCompletedLevels();
         
-        // Obtener estrellas de localStorage (ahora con clave por usuario)
         const totalStars = getTotalStars();
 
         setStats({
           totalLevels,
           completedLevels,
-          totalStars: totalStars || 0, // Asegurar que siempre sea un número
+          totalStars: totalStars || 0,
           totalClassrooms,
           isLoading: false
         });
@@ -183,7 +167,6 @@ export const useUserStats = () => {
     loadStats();
   }, [isAuthenticated, userInfo]);
 
-  // Función para recargar estadísticas manualmente
   const refreshStats = async () => {
     setStats(prev => ({ ...prev, isLoading: true }));
     
@@ -204,12 +187,10 @@ export const useUserStats = () => {
     }
   };
 
-  // Calcular porcentaje de progreso
   const progressPercentage = stats.totalLevels > 0 
     ? Math.round((stats.completedLevels / stats.totalLevels) * 100)
     : 0;
 
-  // Calcular promedio de estrellas por nivel completado
   const averageStars = stats.completedLevels > 0
     ? (stats.totalStars / stats.completedLevels).toFixed(1)
     : 'N/A';

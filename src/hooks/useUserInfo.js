@@ -35,7 +35,6 @@ export const useUserInfo = () => {
     }
   };
 
-  // Cargar información automáticamente cuando el usuario esté autenticado
   useEffect(() => {
     if (isAuthenticated) {
       loadUserInfo();
@@ -45,40 +44,33 @@ export const useUserInfo = () => {
     }
   }, [isAuthenticated]);
 
-  // Función para refrescar la información manualmente
   const refreshUserInfo = () => {
     return loadUserInfo();
   };
 
-  // Función para limpiar la información
   const clearUserInfo = () => {
     setUserInfo(null);
     setError(null);
   };
 
-  // Getters útiles
   const fullName = userInfo ? `${userInfo.name} ${userInfo.lastNames}` : null;
   const firstName = userInfo?.name || null;
   const lastName = userInfo?.lastNames || null;
   const age = userInfo?.age || null;
 
   return {
-    // Estados
     userInfo,
     isLoading,
     error,
     
-    // Acciones
     refreshUserInfo,
     clearUserInfo,
     
-    // Getters útiles
     fullName,
     firstName,
     lastName,
     age,
     
-    // Utilidades
     clearError: () => setError(null)
   };
 };

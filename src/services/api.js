@@ -2,9 +2,6 @@
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
-/** =========================
- *  Config & helpers
- * ========================= */
 export const BACKEND_URL = "http://213.199.42.57:8084";
 //export const BACKEND_URL = "http://localhost:8080";
 
@@ -29,9 +26,6 @@ export const getRoleBasedOnToken = () => {
   return decoded?.role ?? null;
 };
 
-/** =========================
- *  AUTH
- * ========================= */
 // POST /auth/register/teacher
 export const registerTeacher = async ({ name, lastNames, age, email, password }) => {
   const { data, status } = await api.post("/auth/register/teacher", {
@@ -79,43 +73,36 @@ export const loginStudent = async ({ name, lastNames, passwordNumber }) => {
   return getRoleBasedOnToken();
 };
 
-/** =========================
- *  TEACHER actions
- * ========================= */
-// POST /teacher/create/classroom   body: { name, capacity }
+// POST /teacher/create/classroom
 export const teacherCreateClassroom = async ({ name, capacity }) => {
   const { data } = await api.post(
     "/teacher/create/classroom",
     { name, capacity },
     { headers: authHeaders() }
   );
-  return data; // { id, name, capacity, actualNumberStudents }
+  return data;
 };
 
-// POST /teacher/create/classroom/:classroomId/course   body: { name }
+// POST /teacher/create/classroom/:classroomId/course
 export const teacherCreateCourse = async (classroomId, { name }) => {
   const { data } = await api.post(
     `/teacher/create/classroom/${classroomId}/course`,
     { name },
     { headers: authHeaders() }
   );
-  return data; // { courseId, name }
+  return data;
 };
 
 // POST /teacher/create/classroom/:classroomId/course/:courseId/topic
-// body: { name, startDate?, endDate? }
 export const teacherCreateTopic = async (classroomId, courseId, payload) => {
   const { data } = await api.post(
     `/teacher/create/classroom/${classroomId}/course/${courseId}/topic`,
     payload,
     { headers: authHeaders() }
   );
-  return data; // { id: { classroomId, courseId, topicNumber }, name }
+  return data;
 };
 
-/** =========================
- *  Student actions
- * ========================= */
 // POST /student/join/classroom   body: { classroomId }
 export const studentJoinClassroom = async (classroomId) => {
   const { data } = await api.post(
@@ -123,12 +110,9 @@ export const studentJoinClassroom = async (classroomId) => {
     { classroomId },
     { headers: authHeaders() }
   );
-  return data; // 1 (éxito)
+  return data;
 };
 
-/** =========================
- *  Gets unificados (Teacher/Student)
- * ========================= */
 // GET /classrooms
 export const getClassrooms = async () => {
   const { data } = await api.get("/classrooms", { headers: authHeaders() });
@@ -152,7 +136,6 @@ export const getTopics = async (classroomId, courseId) => {
   return data;
 };
 
-// Aliases (compatibilidad)
 export const teacherGetClassrooms = getClassrooms;
 export const studentGetClassrooms = getClassrooms;
 export const teacherGetCourses = getCourses;
@@ -160,9 +143,6 @@ export const studentGetCourses = getCourses;
 export const teacherGetTopics = getTopics;
 export const studentGetTopics = getTopics;
 
-/** =========================
- *  Student flow (nuevos endpoints)
- * ========================= */
 
 // GET /classrooms/courses/topics/{topicId}/levels
 export const studentGetLevels = async (topicId) => {
@@ -179,7 +159,7 @@ export const studentCheckLevelPassed = async (levelId) => {
     `/student/classroom/course/topic/level/${levelId}/passedOrNot`,
     { headers: authHeaders() }
   );
-  return data; // true | false
+  return data;
 };
 
 // GET /student/classroom/course/topic/level/{levelId}/play
@@ -188,7 +168,7 @@ export const studentPlayLevel = async (levelId) => {
     `/student/classroom/course/topic/level/${levelId}/play`,
     { headers: authHeaders() }
   );
-  return data; // { levelRunId, runNumber, status }
+  return data;
 };
 
 // GET /student/classroom/course/topic/level/run/{levelRunId}/attempts
@@ -197,7 +177,6 @@ export const studentGetLevelRunAttempts = async (levelRunId) => {
     `/student/classroom/course/topic/level/run/${levelRunId}/attempts`,
     { headers: authHeaders() }
   );
-  // Retorna: [{ exerciseNumber, attemptNumber, markedOption, isCorrect }]
   return data;
 };
 
@@ -207,7 +186,6 @@ export const studentGetLevelRunResult = async (levelRunId) => {
     `/student/classroom/course/topic/level/run/${levelRunId}/result`,
     { headers: authHeaders() }
   );
-  // Retorna: { totalCorrectFirstTry, minCorrectFirstTry, status }
   return data;
 };
 
@@ -217,7 +195,6 @@ export const studentGetLevelRunSolutions = async (levelRunId) => {
     `/student/classroom/course/topic/level/run/${levelRunId}/result/solutions`,
     { headers: authHeaders() }
   );
-  // Retorna: [{ exerciseNumber, question, detailedSolution }]
   return data;
 };
 
@@ -228,7 +205,7 @@ export const studentRepeatLevel = async (levelId) => {
     {},
     { headers: authHeaders() }
   );
-  return data; // Información del nuevo run para repetir el nivel
+  return data;
 };
 
 // GET /student/classroom/course/topic/level/{levelId}/exercises
@@ -237,16 +214,13 @@ export const studentGetExercises = async (levelId) => {
     `/student/classroom/course/topic/level/${levelId}/exercises`,
     { headers: authHeaders() }
   );
-  // Retorna: [{ exerciseId, exerciseNumber, question, optionA, optionB, optionC, optionD, optionE, correctOption }]
   return data;
 };
 
 // POST /student/classroom/course/topic/level/run/{levelRunId}/exercise/{exerciseId}/answer
-// El backend valida que el exerciseId pertenezca al mismo level del levelRun
 export const studentMarkOption = async (levelRunId, exerciseId, markedOption) => {
   const url = `/student/classroom/course/topic/level/run/${levelRunId}/exercise/${exerciseId}/answer`;
   
-  // Generar fecha en formato ISO (YYYY-MM-DD)
   const date = new Date().toISOString().split('T')[0];
   
   console.log('🎯 Enviando POST a:', url);
@@ -272,9 +246,6 @@ export const studentMarkOption = async (levelRunId, exerciseId, markedOption) =>
   }
 };
 
-/** =========================
- *  Chat Teacher-Assistant
- * ========================= */
 // POST /messages/classrooms/:classroomId/courses/:courseId/topics/:topicNumber/boot
 export const assistantBootTopic = async (classroomId, courseId, topicNumber, content) => {
   const body = { role: "ASSISTANT", content };
@@ -287,7 +258,6 @@ export const assistantBootTopic = async (classroomId, courseId, topicNumber, con
 };
 
 // POST /messages/classrooms/:classroomId/courses/:courseId/topics/:topicNumber/chat
-// Body en texto plano (Content-Type: text/plain)
 export const assistantChat = async (classroomId, courseId, topicNumber, messageText) => {
   const { data } = await api.post(
     `/messages/classrooms/${classroomId}/courses/${courseId}/topics/${topicNumber}/chat`,
@@ -299,7 +269,6 @@ export const assistantChat = async (classroomId, courseId, topicNumber, messageT
       },
     }
   );
-  // Respuesta según tus capturas: { messageNumber, role: "ASSISTANT", content: "<json-string>" }
   return data;
 };
 
@@ -308,7 +277,6 @@ export const assistantChat = async (classroomId, courseId, topicNumber, messageT
  * ========================= */
 export const logout = () => clearToken();
 
-// Alias para mantener tu import previo
 export const fetchLogin = async (body) => loginTeacher(body);
 
 /** =========================
@@ -319,7 +287,6 @@ export const getUserInfo = async () => {
   const { data } = await api.get("/user/info", { headers: authHeaders() });
   console.log('👤 [API] getUserInfo response:', data);
   
-  // Obtener gender del endpoint específico
   try {
     const genderResponse = await api.get("/user/info/gender", { headers: authHeaders() });
     if (genderResponse.data) {
@@ -332,6 +299,6 @@ export const getUserInfo = async () => {
   
   return data;
 };
-// Alias por conveniencia (mismo endpoint)
+
 export const getStudentInfo = getUserInfo;
 export const getTeacherInfo = getUserInfo;
